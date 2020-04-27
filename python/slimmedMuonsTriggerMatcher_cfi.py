@@ -55,7 +55,7 @@ slimmedMuonsWithTrigger.matches += slimmedMuonsTriggerMatchers1MuInputTags
 
 ## ==== Trigger Sequence ====
 slimmedMuonsWithTriggerSequence = cms.Sequence(
-    unpackedPatTrigger *
-    slimmedMuonsTriggerMatchers1Mu *
-    slimmedMuonsWithTrigger
+    unpackedPatTrigger# *
+#    slimmedMuonsTriggerMatchers1Mu *
+#    slimmedMuonsWithTrigger
 )

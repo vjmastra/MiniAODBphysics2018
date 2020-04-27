@@ -8,7 +8,7 @@ cmsrel CMSSW_10_2_3
 cd CMSSW_10_2_3/src/
 cmsenv
 voms-proxy-init -voms cms -valid 192:00
-git clone https://github.com/jmejiagu/MiniAODBphysics2018.git myAnalyzers/JPsiKsPAT
+git clone https://github.com/vjmastra/MiniAODBphysics2018.git myAnalyzers/JPsiKsPAT
 scram b
 cd myAnalyzers/JPsiKsPAT/test/
 cmsRun PsikaonRootupler.py

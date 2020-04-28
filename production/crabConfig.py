@@ -109,8 +109,8 @@ config.Data.inputDBS            = 'global'
 config.Data.splitting           = 'Automatic'
 #config.Data.runRange            = runNum
 config.Data.lumiMask            = lumi
-config.Data.outLFNDirBase       = '/store/user/vmastrap/%s' % (workDir)
-#config.Data.outLFNDirBase       = '/store/user/%s/%s' % (getUsernameFromSiteDB(), workDir)
+#config.Data.outLFNDirBase       = '/store/user/vmastrap/%s' % (workDir)
+config.Data.outLFNDirBase       = '/store/user/%s/%s' % (getUsernameFromSiteDB(), workDir)
 config.Data.publication         = False
 #config.Data.ignoreLocality      = True
 

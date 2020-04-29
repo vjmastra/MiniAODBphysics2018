@@ -11,7 +11,7 @@ voms-proxy-init -voms cms -valid 192:00
 git clone https://github.com/vjmastra/MiniAODBphysics2018.git myAnalyzers/JPsiKsPAT
 scram b
 cd myAnalyzers/JPsiKsPAT/test/
-cmsRun PsikaonRootupler.py
+cmsRun Psi2SpiRootupler.py
 ```
 
 

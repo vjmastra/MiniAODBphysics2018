@@ -119,7 +119,7 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   BDecayVtxXYE(0), BDecayVtxXZE(0), BDecayVtxYZE(0),
 
   // *******************************************************
-  nB(0), nMu(0), nJpsi(0),
+  nB(0), nMu(0), nJpsi_test(0),
   B_mass(0), B_px(0), B_py(0), B_pz(0),
 
   piPi_mass(0), psiPiPi_mass(0),
@@ -135,8 +135,13 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   J_pt1(0), J_px1(0), J_py1(0), J_pz1(0), 
   J_pt2(0), J_px2(0), J_py2(0), J_pz2(0), 
   J_charge1(0), J_charge2(0),
+  
+  mu1_px_test(0), mu1_py_test(0), mu1_pz_test(0), mu1_charge_test(0),
+  mu2_px_test(0), mu2_py_test(0), mu2_pz_test(0), mu2_charge_test(0),
+  Jpsi_dca_test(0),
+  Jpsi_vx_test(0), Jpsi_vy_test(0), Jpsi_vz_test(0),
 
-  Jtest_mass(0), Jtest_prob(0),
+  Jpsi_mass_test(0), Jpsi_prob_test(0), Jpsi_chi2_test(0),
 
   J_chi2(0), psi2S_chi2(0), B_chi2(0),
   B_Prob(0), J_Prob(0), psi2S_Prob(0),
@@ -268,45 +273,67 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       KinematicParticleVertexFitter fitter;
 
-      RefCountedKinematicTree Jtest_VertexFitTree;
+      RefCountedKinematicTree Jpsi_VertexFitTree_test;
       try {
-        Jtest_VertexFitTree = fitter.fit(muonParticles_test);
+        Jpsi_VertexFitTree_test = fitter.fit(muonParticles_test);
       }
       catch (...) {
         std::cout<<" Exception caught ... continuing 2 "<<std::endl;
         continue;
       }
 
-      if (!Jtest_VertexFitTree->isValid()) {
+      if (!Jpsi_VertexFitTree_test->isValid()) {
         //std::cout << "caught an exception in the psi vertex fit" << std::endl;
         continue;
       }
 
-      Jtest_VertexFitTree->movePointerToTheTop();
+      Jpsi_VertexFitTree_test->movePointerToTheTop();
 
-      RefCountedKinematicParticle Jtest_vFit_noMC = Jtest_VertexFitTree->currentParticle();
-      RefCountedKinematicVertex Jtest_vFit_vertex_noMC = Jtest_VertexFitTree->currentDecayVertex();
+      RefCountedKinematicParticle Jpsi_vFit_test = Jpsi_VertexFitTree_test->currentParticle();
+      RefCountedKinematicVertex Jpsi_vFit_vertex_test = Jpsi_VertexFitTree_test->currentDecayVertex();
 
-      if(Jtest_vFit_vertex_noMC->chiSquared() < 0 ) {
+      if(Jpsi_vFit_vertex_test->chiSquared() < 0 ) {
         std::cout << "negative chisq from psi fit" << endl;
         continue;
       }
 
-      double Jtest_Prob_tmp   = TMath::Prob(Jtest_vFit_vertex_noMC->chiSquared(),(int)Jtest_vFit_vertex_noMC->degreesOfFreedom());
-      if(Jtest_Prob_tmp<0.01) {
+      double Jpsi_prob_tmp_test   = TMath::Prob(Jpsi_vFit_vertex_test->chiSquared(),(int)Jpsi_vFit_vertex_test->degreesOfFreedom());
+      if(Jpsi_prob_tmp_test<0.01) {
         continue;
       }
 
       //some loose cuts go here
-      
-      if(Jtest_vFit_noMC->currentState().mass()<3.0 || Jtest_vFit_noMC->currentState().mass()>3.2) continue;
+      double Jpsi_mass_tmp_test = Jpsi_vFit_test->currentState().mass();
+      if( Jpsi_mass_tmp_test < 3.0 || Jpsi_mass_tmp_test > 3.2) continue;
    
       //Write
 
-      nJpsi++;     
-      Jtest_mass->push_back(Jtest_vFit_noMC->currentState().mass());
-      Jtest_prob->push_back(Jtest_Prob_tmp);   
- 
+      Jpsi_VertexFitTree_test->movePointerToTheFirstChild();
+      RefCountedKinematicParticle muACand_test = Jpsi_VertexFitTree_test->currentParticle();
+      Jpsi_VertexFitTree_test->movePointerToTheNextChild();
+      RefCountedKinematicParticle muBCand_test = Jpsi_VertexFitTree_test->currentParticle();
+
+      KinematicParameters muAKP_test = muACand_test->currentState().kinematicParameters();
+      KinematicParameters muBKP_test = muBCand_test->currentState().kinematicParameters();
+
+
+      nJpsi_test++;     
+      mu1_px_test->push_back(muAKP_test.momentum().x());
+      mu1_py_test->push_back(muAKP_test.momentum().y());
+      mu1_pz_test->push_back(muAKP_test.momentum().z());
+      mu1_charge_test->push_back(muACand_test->currentState().particleCharge());
+      mu2_px_test->push_back(muBKP_test.momentum().x());
+      mu2_py_test->push_back(muBKP_test.momentum().x());
+      mu2_pz_test->push_back(muBKP_test.momentum().x());
+      mu2_charge_test->push_back(muBCand_test->currentState().particleCharge());
+      Jpsi_vx_test->push_back((*Jpsi_vFit_vertex_test).position().x());
+      Jpsi_vy_test->push_back((*Jpsi_vFit_vertex_test).position().y());
+      Jpsi_vz_test->push_back((*Jpsi_vFit_vertex_test).position().z());
+      Jpsi_dca_test->push_back(dca);
+      Jpsi_mass_test->push_back(Jpsi_mass_tmp_test);
+      Jpsi_prob_test->push_back(Jpsi_prob_tmp_test);   
+      Jpsi_chi2_test->push_back(Jpsi_vFit_vertex_test->chiSquared());
+
       //Clean
 
       muonParticles_test.clear();
@@ -743,7 +770,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
  
    
    //fill the tree and clear the vectors
-   if (nJpsi > 0) {
+   if (nJpsi_test > 0) {
      treeTest_->Fill();
    }
 
@@ -753,7 +780,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    }
    // *********
 
-   nB = 0; nMu = 0; nJpsi = 0;
+   nB = 0; nMu = 0; nJpsi_test = 0;
 
    B_mass->clear();    B_px->clear();    B_py->clear();    B_pz->clear();
 
@@ -774,7 +801,12 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    J_chi2->clear(); psi2S_chi2->clear(); B_chi2->clear();
    B_Prob->clear(); J_Prob->clear(); psi2S_Prob->clear();
 
-   Jtest_mass->clear(); Jtest_prob->clear(); 
+   mu1_px_test->clear(); mu1_py_test->clear(); mu1_pz_test->clear(); mu1_charge_test->clear();
+   mu2_px_test->clear(); mu2_py_test->clear(); mu2_pz_test->clear(); mu2_charge_test->clear();
+   Jpsi_dca_test->clear();
+   Jpsi_vx_test->clear(); Jpsi_vy_test->clear(); Jpsi_vz_test->clear();
+
+   Jpsi_mass_test->clear(); Jpsi_prob_test->clear(); Jpsi_chi2_test->clear();
 
    // *********
 
@@ -935,8 +967,22 @@ void Psi2Spi::beginJob()
   tree_->Branch("mu1loose",&mu1loose);
   tree_->Branch("mu2loose",&mu2loose);
 
-  treeTest_->Branch("Jtest_mass",&Jtest_mass);
-  treeTest_->Branch("Jtest_prob",&Jtest_prob);
+  treeTest_->Branch("nJpsi_test",&nJpsi_test);
+  treeTest_->Branch("mu1_px_test",&mu1_px_test);
+  treeTest_->Branch("mu1_py_test",&mu1_py_test);
+  treeTest_->Branch("mu1_pz_test",&mu1_pz_test);
+  treeTest_->Branch("mu1_charge_test",&mu1_charge_test);
+  treeTest_->Branch("mu2_px_test",&mu2_px_test);
+  treeTest_->Branch("mu2_py_test",&mu2_py_test);
+  treeTest_->Branch("mu2_pz_test",&mu2_pz_test);
+  treeTest_->Branch("mu2_charge_test",&mu2_charge_test);
+  treeTest_->Branch("Jpsi_dca_test",&Jpsi_dca_test);
+  treeTest_->Branch("Jpsi_vx_test",&Jpsi_vx_test);
+  treeTest_->Branch("Jpsi_vy_test",&Jpsi_vy_test);
+  treeTest_->Branch("Jpsi_vz_test",&Jpsi_vz_test);
+  treeTest_->Branch("Jpsi_mass_test",&Jpsi_mass_test);
+  treeTest_->Branch("Jpsi_prob_test",&Jpsi_prob_test);
+  treeTest_->Branch("Jpsi_chi2_test",&Jpsi_chi2_test);
 }
 
 

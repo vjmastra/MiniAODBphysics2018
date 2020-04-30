@@ -687,9 +687,9 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             pi3_py->push_back(pi3KP.momentum().y());
             pi3_pz->push_back(pi3KP.momentum().z());
             pi3_charge->push_back(pi3CandMC->currentState().particleCharge());
-            pi1_px_track->push_back(iTrack2->px());
-            pi1_py_track->push_back(iTrack2->py());
-            pi1_pz_track->push_back(iTrack2->pz());
+            pi3_px_track->push_back(iTrack3->px());
+            pi3_py_track->push_back(iTrack3->py());
+            pi3_pz_track->push_back(iTrack3->pz());
 
 	    J_chi2->push_back(J_vFit_vertex_noMC->chiSquared());
             psi2S_chi2->push_back( psi2SDecayVertexMC->chiSquared());

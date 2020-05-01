@@ -316,7 +316,6 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       KinematicParameters muAKP_test = muACand_test->currentState().kinematicParameters();
       KinematicParameters muBKP_test = muBCand_test->currentState().kinematicParameters();
 
-
       nJpsi_test++;     
       mu1_px_test->push_back(muAKP_test.momentum().x());
       mu1_py_test->push_back(muAKP_test.momentum().y());
@@ -481,7 +480,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           double piPiMass = (pion14V + pion24V).M();
           double psiPiPiMass = (psi2S4V).M();       
 
-          if ( psiPiPiMass < 3 || psiPiPiMass > 5) continue;
+          if (piPiMass < 0.45) continue;
+          if (psiPiPiMass < 3.4 || psiPiPiMass > 4.2) continue;
 
           // JPsi mass constraint is applied
 
@@ -500,7 +500,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           RefCountedKinematicParticle psi2SCandMC = psi2SVertexFitTree->currentParticle();          
           RefCountedKinematicVertex psi2SDecayVertexMC = psi2SVertexFitTree->currentDecayVertex();
           if (!psi2SDecayVertexMC->vertexIsValid()) continue;
-          if ((psi2SCandMC->currentState().mass() < 3.5) || (psi2SCandMC->currentState().mass() > 4.0) ) continue;
+          if ((psi2SCandMC->currentState().mass() < 3.4) || (psi2SCandMC->currentState().mass() > 4.2) ) continue;
 
           double psi2S_Prob_tmp = TMath::Prob(psi2SDecayVertexMC->chiSquared(),(int)psi2SDecayVertexMC->degreesOfFreedom());
           if (psi2S_Prob_tmp<0.01) continue;
@@ -567,7 +567,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      continue;
 	    }
 	     
-	    if(BCandMC->currentState().mass()< 5.0 || BCandMC->currentState().mass()> 7.0) continue;
+	    if(BCandMC->currentState().mass()< 5.95 || BCandMC->currentState().mass()> 6.45) continue;
 	     
 	    if(BDecayVertexMC->chiSquared()<0) {
               //std::cout << " continue from negative chi2 = " << bDecayVertexMC->chiSquared() << endl;
@@ -680,8 +680,6 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             pi2_px_track->push_back(iTrack2->px());
             pi2_py_track->push_back(iTrack2->py());
             pi2_pz_track->push_back(iTrack2->pz());
-
-//inserisci info psiprime
 
             pi3_px->push_back(pi3KP.momentum().x());
             pi3_py->push_back(pi3KP.momentum().y());

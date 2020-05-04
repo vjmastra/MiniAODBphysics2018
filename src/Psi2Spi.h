@@ -90,7 +90,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> primaryVertices_Label;
   edm::EDGetTokenT<reco::BeamSpot> BSLabel_;
   edm::EDGetTokenT<edm::TriggerResults> triggerResults_Label;
-  edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerObjects_;
+//  edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerObjects_;
 
   std::string genParticles_;
   bool OnlyBest_;
@@ -133,11 +133,14 @@ private:
 
   unsigned int             nB;
   unsigned int             nMu;
+  unsigned int             nJpsi;
+  unsigned int             nPsi2S;
   unsigned int             nJpsi_test;
 
   std::vector<float>       *B_mass, *B_px, *B_py, *B_pz;
 
   std::vector<float>       *piPi_mass, *psiPiPi_mass;
+  std::vector<float>       *deltaR1, *deltaR2;
  
   std::vector<float>       *pi1_px, *pi1_py, *pi1_pz,  *pi1_charge;
   std::vector<float>       *pi1_px_track, *pi1_py_track, *pi1_pz_track;

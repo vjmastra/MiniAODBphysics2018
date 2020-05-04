@@ -47,7 +47,8 @@
 
 #include "DataFormats/Common/interface/RefToBase.h"
 #include "DataFormats/Candidate/interface/ShallowCloneCandidate.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"2#include "DataFormats/Candidate/interface/CandMatchMap.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/Candidate/interface/CandMatchMap.h"
 #include "DataFormats/Math/interface/Error.h"
 #include "RecoVertex/VertexTools/interface/VertexDistance.h"
 #include "RecoVertex/VertexTools/interface/VertexDistance3D.h"
@@ -90,7 +91,7 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
-  triggerObjects_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("objects"))),   
+//triggerObjects_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("objects"))),   
 
   genParticles_ ( iConfig.getUntrackedParameter<std::string>("GenParticles",std::string("genParticles")) ),
   OnlyBest_(iConfig.getParameter<bool>("OnlyBest")),
@@ -119,10 +120,11 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   BDecayVtxXYE(0), BDecayVtxXZE(0), BDecayVtxYZE(0),
 
   // *******************************************************
-  nB(0), nMu(0), nJpsi_test(0),
+  nB(0), nMu(0), nJpsi(0), nPsi2S(0), nJpsi_test(0),
   B_mass(0), B_px(0), B_py(0), B_pz(0),
 
   piPi_mass(0), psiPiPi_mass(0),
+  deltaR1(0), deltaR2(0),
 
   pi1_px(0), pi1_py(0), pi1_pz(0), pi1_charge(0),
   pi1_px_track(0), pi1_py_track(0), pi1_pz_track(0),
@@ -180,17 +182,17 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(dimuon_Label,thePATMuonHandle);
 
   edm::Handle<edm::TriggerResults> triggerBits;
-  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
+//  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
 
   iEvent.getByToken(triggerResults_Label, triggerBits);
-  iEvent.getByToken(triggerObjects_, triggerObjects); 
-  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
+//  iEvent.getByToken(triggerObjects_, triggerObjects); 
+//  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
 
-  for ( size_t iTrigObj = 0; iTrigObj < triggerObjects->size(); ++iTrigObj ) {
-    pat::TriggerObjectStandAlone obj( triggerObjects->at( iTrigObj ) );
-    obj.unpackPathNames(names);
-    obj.unpackFilterLabels(iEvent, *triggerBits);
-  }
+//  for ( size_t iTrigObj = 0; iTrigObj < triggerObjects->size(); ++iTrigObj ) {
+//    pat::TriggerObjectStandAlone obj( triggerObjects->at( iTrigObj ) );
+//    obj.unpackPathNames(names);
+//    obj.unpackFilterLabels(iEvent, *triggerBits);
+//  }
 
   // *********************************
   //Now we get the primary vertex 
@@ -448,7 +450,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //some loose cuts go here
 
       if(J_vFit_noMC->currentState().mass()<3.0 || J_vFit_noMC->currentState().mass()>3.2) continue;
-      
+ 
+      nJpsi++;     
       //jpsipipi
 
       for (View<pat::PackedCandidate>::const_iterator iTrack1 = thePATTrackHandle->begin(); iTrack1 != thePATTrackHandle->end(); ++iTrack1 ) {
@@ -483,6 +486,15 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           if (piPiMass < 0.45) continue;
           if (psiPiPiMass < 3.4 || psiPiPiMass > 4.2) continue;
 
+          float dR1_tmp;
+          float dR2_tmp;
+
+          dR1_tmp = Jpsi4V.DeltaR(pion14V);
+          dR2_tmp = Jpsi4V.DeltaR(pion24V);
+
+//          if (dR1_tmp > 0.4) continue; //not efficient
+//          if (dR2_tmp > 0.4) continue; 
+
           // JPsi mass constraint is applied
 
           vector<RefCountedKinematicParticle> vFitMCParticles;
@@ -504,6 +516,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
           double psi2S_Prob_tmp = TMath::Prob(psi2SDecayVertexMC->chiSquared(),(int)psi2SDecayVertexMC->degreesOfFreedom());
           if (psi2S_Prob_tmp<0.01) continue;
+
+          nPsi2S++;
 
           for(View<pat::PackedCandidate>::const_iterator iTrack3 = thePATTrackHandle->begin(); iTrack3 != thePATTrackHandle->end(); ++iTrack3) {
 
@@ -647,6 +661,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
             piPi_mass->push_back(piPiMass);
             psiPiPi_mass->push_back( psi2SCandMC->currentState().mass());
+            deltaR1->push_back(dR1_tmp);
+            deltaR2->push_back(dR2_tmp);
 
             J_mass->push_back( J_vFit_noMC->currentState().mass() );
             J_px->push_back( J_vFit_noMC->currentState().globalMomentum().x() );
@@ -778,11 +794,12 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    }
    // *********
 
-   nB = 0; nMu = 0; nJpsi_test = 0;
+   nB = 0; nMu = 0; nJpsi = 0; nPsi2S = 0; nJpsi_test = 0;
 
    B_mass->clear();    B_px->clear();    B_py->clear();    B_pz->clear();
 
    piPi_mass->clear(); psiPiPi_mass->clear();
+   deltaR1->clear(); deltaR2->clear();
 
    J_mass->clear();  J_px->clear();  J_py->clear();  J_pz->clear();
 
@@ -856,6 +873,8 @@ void Psi2Spi::beginJob()
 
   tree_->Branch("nB",&nB,"nB/i");
   tree_->Branch("nMu",&nMu,"nMu/i");
+  tree_->Branch("nJpsi",&nJpsi,"nJpsi/i");
+  tree_->Branch("nPsi2S",&nPsi2S,"nPsi2S/i");
 
   tree_->Branch("B_mass", &B_mass);
   tree_->Branch("B_px", &B_px);
@@ -864,6 +883,8 @@ void Psi2Spi::beginJob()
 
   tree_->Branch("PiPi_mass", &piPi_mass);
   tree_->Branch("PsiPiPi_mass", &psiPiPi_mass);  
+  tree_->Branch("deltaR_J_p1", &deltaR1);
+  tree_->Branch("deltaR_J_p2", &deltaR2);
 
   tree_->Branch("J_mass", &J_mass);
   tree_->Branch("J_px", &J_px);

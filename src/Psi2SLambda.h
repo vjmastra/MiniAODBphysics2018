@@ -139,11 +139,13 @@ private:
 
   unsigned int             nlB;
   unsigned int             nMu;
-  unsigned int             nJpsi;
+  unsigned int             nJpsi; 
+  unsigned int             nPsi2S;
 
   std::vector<float>       *lB_mass, *lB_px, *lB_py, *lB_pz;
 
   std::vector<float>       *piPi_mass, *psiPiPi_mass;
+  std::vector<float>       *deltaR1, *deltaR2;
  
   std::vector<float>       *lambda_mass, *lambda_px, *lambda_py, *lambda_pz;
   std::vector<float>       *lambda_pt1, *lambda_px1, *lambda_py1, *lambda_pz1;

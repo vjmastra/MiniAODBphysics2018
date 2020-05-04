@@ -124,11 +124,12 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   VDecayVtxXYE(0), VDecayVtxXZE(0), VDecayVtxYZE(0), 
 
   // *******************************************************
-  nlB(0), nMu(0), nJpsi(0),
+  nlB(0), nMu(0), nJpsi(0), nPsi2S(0),
   lB_mass(0), lB_px(0), lB_py(0), lB_pz(0),
 
   piPi_mass(0), psiPiPi_mass(0),
-  
+  deltaR1(0), deltaR2(0),
+
   lambda_mass(0), lambda_px(0), lambda_py(0), lambda_pz(0),
   lambda_pt1(0), lambda_px1(0), lambda_py1(0), lambda_pz1(0), 
   lambda_pt2(0), lambda_px2(0), lambda_py2(0), lambda_pz2(0), 
@@ -463,11 +464,17 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           pion14V.SetXYZM(iTrack1->px(),iTrack1->py(),iTrack1->pz(),pion_mass);
           pion24V.SetXYZM(iTrack2->px(),iTrack2->py(),iTrack2->pz(),pion_mass);
           Jpsi4V.SetXYZM(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z(),J_vFit_noMC->currentState().mass());          
-          double piPiMass = (pion14V + pion24V).M();
-          double psiPiPiMass = (pion14V + pion24V + Jpsi4V).M();       
+          float piPiMass = (pion14V + pion24V).M();
+          float psiPiPiMass = (pion14V + pion24V + Jpsi4V).M();       
 
           if ( psiPiPiMass < 3 || psiPiPiMass > 5) continue;
 
+          float dR1_tmp;
+          float dR2_tmp;
+
+          dR1_tmp = Jpsi4V.DeltaR(pion14V);
+          dR2_tmp = Jpsi4V.DeltaR(pion24V);          
+          
           // JPsi mass constraint is applied
 
           vector<RefCountedKinematicParticle> vFitMCParticles;
@@ -489,6 +496,8 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
           double psi2S_Prob_tmp = TMath::Prob(psi2SDecayVertexMC->chiSquared(),(int)psi2SDecayVertexMC->degreesOfFreedom());
           if (psi2S_Prob_tmp<0.01) continue;
+
+          nPsi2S++;
 
           if ( theV0PtrHandle->size()>0 && thePATMuonHandle->size()>=2 ) { 
             for ( vector<VertexCompositePtrCandidate>::const_iterator iVee = theV0PtrHandle->begin();   iVee != theV0PtrHandle->end(); ++iVee ) {
@@ -691,6 +700,9 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               piPi_mass->push_back(piPiMass);
               psiPiPi_mass->push_back( psi2SCandMC->currentState().mass());
 
+              deltaR1->push_back(dR1_tmp);
+              deltaR2->push_back(dR2_tmp);
+
 	      lambda_mass->push_back( lambda_vFit_noMC->currentState().mass() );
 	      lambda_px->push_back( lambda_vFit_noMC->currentState().globalMomentum().x() );
 	      lambda_py->push_back( lambda_vFit_noMC->currentState().globalMomentum().y() );
@@ -743,7 +755,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               J_Prob->push_back(J_Prob_tmp);
               psi2S_Prob->push_back( psi2S_Prob_tmp);
               lambda_Prob->push_back(lambda_Prob_tmp);
- 
+
 	      lBDecayVtxX->push_back((*lBDecayVertexMC).position().x());
 	      lBDecayVtxY->push_back((*lBDecayVertexMC).position().y());
 	      lBDecayVtxZ->push_back((*lBDecayVertexMC).position().z());
@@ -848,12 +860,13 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    }
    // *********
 
-   nlB = 0; nMu = 0; nJpsi = 0;
+   nlB = 0; nMu = 0; nJpsi = 0; nPsi2S = 0;
 
    lB_mass->clear();    lB_px->clear();    lB_py->clear();    lB_pz->clear();
    lambda_mass->clear(); lambda_px->clear(); lambda_py->clear(); lambda_pz->clear();
 
    piPi_mass->clear(); psiPiPi_mass->clear();
+   deltaR1->clear(); deltaR2->clear();
 
    J_mass->clear();  J_px->clear();  J_py->clear();  J_pz->clear();
 
@@ -870,7 +883,6 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    lB_Prob->clear(); J_Prob->clear(); lambda_Prob->clear(); psi2S_Prob->clear();
 
    Jtest_mass->clear(); Jtest_prob->clear(); 
-
    // *********
 
    nVtx = 0;
@@ -930,6 +942,9 @@ void Psi2SLambda::beginJob()
 
   tree_->Branch("PiPi_mass", &piPi_mass);
   tree_->Branch("PsiPiPi_mass", &psiPiPi_mass);  
+
+  tree_->Branch("deltaR1", &deltaR1);
+  tree_->Branch("deltaR2", &deltaR2);
 
   tree_->Branch("lambda_mass", &lambda_mass);
   tree_->Branch("lambda_px", &lambda_px);

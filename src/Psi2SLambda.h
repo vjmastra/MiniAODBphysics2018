@@ -146,7 +146,8 @@ private:
 
   std::vector<float>       *piPi_mass, *psiPiPi_mass;
   std::vector<float>       *deltaR1, *deltaR2;
- 
+  std::vector<float>       *pointingAngle;
+
   std::vector<float>       *lambda_mass, *lambda_px, *lambda_py, *lambda_pz;
   std::vector<float>       *lambda_pt1, *lambda_px1, *lambda_py1, *lambda_pz1;
   std::vector<float>       *lambda_pt2, *lambda_px2, *lambda_py2, *lambda_pz2;

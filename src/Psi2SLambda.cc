@@ -129,6 +129,7 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
 
   piPi_mass(0), psiPiPi_mass(0),
   deltaR1(0), deltaR2(0),
+  pointingAngle(0),
 
   lambda_mass(0), lambda_px(0), lambda_py(0), lambda_pz(0),
   lambda_pt1(0), lambda_px1(0), lambda_py1(0), lambda_pz1(0), 
@@ -475,6 +476,9 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           dR1_tmp = Jpsi4V.DeltaR(pion14V);
           dR2_tmp = Jpsi4V.DeltaR(pion24V);          
           
+          if (dR1_tmp > 0.3) continue;
+          if (dR2_tmp > 0.3) continue;
+
           // JPsi mass constraint is applied
 
           vector<RefCountedKinematicParticle> vFitMCParticles;
@@ -637,7 +641,17 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      if(lB_Prob_tmp<0.01) {
                 continue;
 	      }		     
+
+              float primaryVertex[3] = {priVtxX, priVtxY, priVtxZ};
+              float secundaryVertex[3] = {(*lBDecayVertexMC).position().x(), (*lBDecayVertexMC).position().y(), (*lBDecayVertexMC).position().z()};
+              float flightVec[3];
+              for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
+              TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
+              TVector3 lBmomentum(lBCandMC->currentState().globalMomentum().x(), lBCandMC->currentState().globalMomentum().y(), lBCandMC->currentState().globalMomentum().z());
 		     
+              double cos_alpha = TMath::Cos(flightDir.Angle(lBmomentum));
+              if (cos_alpha < 0.95) continue;
+
    	      // get children from final B fit
 	      psi2SVertexFitTree->movePointerToTheFirstChild();
 	      RefCountedKinematicParticle mu1CandMC = psi2SVertexFitTree->currentParticle();
@@ -702,6 +716,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
               deltaR1->push_back(dR1_tmp);
               deltaR2->push_back(dR2_tmp);
+              pointingAngle->push_back(cos_alpha);
 
 	      lambda_mass->push_back( lambda_vFit_noMC->currentState().mass() );
 	      lambda_px->push_back( lambda_vFit_noMC->currentState().globalMomentum().x() );
@@ -867,6 +882,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
    piPi_mass->clear(); psiPiPi_mass->clear();
    deltaR1->clear(); deltaR2->clear();
+   pointingAngle->clear();
 
    J_mass->clear();  J_px->clear();  J_py->clear();  J_pz->clear();
 
@@ -945,6 +961,7 @@ void Psi2SLambda::beginJob()
 
   tree_->Branch("deltaR1", &deltaR1);
   tree_->Branch("deltaR2", &deltaR2);
+  tree_->Branch("cosAlpha", &pointingAngle);
 
   tree_->Branch("lambda_mass", &lambda_mass);
   tree_->Branch("lambda_px", &lambda_px);

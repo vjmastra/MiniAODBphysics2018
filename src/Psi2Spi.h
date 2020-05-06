@@ -141,7 +141,8 @@ private:
 
   std::vector<float>       *piPi_mass, *psiPiPi_mass;
   std::vector<float>       *deltaR1, *deltaR2;
- 
+  std::vector<float>       *pointingAngle;
+
   std::vector<float>       *pi1_px, *pi1_py, *pi1_pz,  *pi1_charge;
   std::vector<float>       *pi1_px_track, *pi1_py_track, *pi1_pz_track;
   std::vector<float>       *pi2_px, *pi2_py, *pi2_pz,  *pi2_charge;

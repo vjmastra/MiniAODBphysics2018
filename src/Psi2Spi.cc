@@ -124,7 +124,7 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   B_mass(0), B_px(0), B_py(0), B_pz(0),
 
   piPi_mass(0), psiPiPi_mass(0),
-  deltaR1(0), deltaR2(0),
+  deltaR1(0), deltaR2(0), pointingAngle(0),
 
   pi1_px(0), pi1_py(0), pi1_pz(0), pi1_charge(0),
   pi1_px_track(0), pi1_py_track(0), pi1_pz_track(0),
@@ -492,8 +492,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           dR1_tmp = Jpsi4V.DeltaR(pion14V);
           dR2_tmp = Jpsi4V.DeltaR(pion24V);
 
-//          if (dR1_tmp > 0.4) continue; //not efficient
-//          if (dR2_tmp > 0.4) continue; 
+          if (dR1_tmp > 0.3) continue;
+          if (dR2_tmp > 0.3) continue; 
 
           // JPsi mass constraint is applied
 
@@ -592,8 +592,18 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    if(B_Prob_tmp<0.01) {
               continue;
 	    }		     
-//		     
-   	      // get children from final B fit
+
+            float primaryVertex[3] = {priVtxX, priVtxY, priVtxZ};
+            float secundaryVertex[3] = {(*BDecayVertexMC).position().x(), (*BDecayVertexMC).position().y(), (*BDecayVertexMC).position().z()};
+            float flightVec[3];
+            for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
+            TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
+            TVector3 Bmomentum(BCandMC->currentState().globalMomentum().x(), BCandMC->currentState().globalMomentum().y(), BCandMC->currentState().globalMomentum().z());
+
+            double cos_alpha = TMath::Cos(flightDir.Angle(Bmomentum));
+            if (cos_alpha < 0.95) continue;
+
+            // get children from final B fit
 	    BVertexFitTree->movePointerToTheFirstChild();
 	    RefCountedKinematicParticle mu1CandMC = BVertexFitTree->currentParticle();
 	    BVertexFitTree->movePointerToTheNextChild();
@@ -663,6 +673,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             psiPiPi_mass->push_back( psi2SCandMC->currentState().mass());
             deltaR1->push_back(dR1_tmp);
             deltaR2->push_back(dR2_tmp);
+            pointingAngle->push_back(cos_alpha);
 
             J_mass->push_back( J_vFit_noMC->currentState().mass() );
             J_px->push_back( J_vFit_noMC->currentState().globalMomentum().x() );
@@ -799,7 +810,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    B_mass->clear();    B_px->clear();    B_py->clear();    B_pz->clear();
 
    piPi_mass->clear(); psiPiPi_mass->clear();
-   deltaR1->clear(); deltaR2->clear();
+   deltaR1->clear(); deltaR2->clear(); pointingAngle->clear();
 
    J_mass->clear();  J_px->clear();  J_py->clear();  J_pz->clear();
 
@@ -885,6 +896,7 @@ void Psi2Spi::beginJob()
   tree_->Branch("PsiPiPi_mass", &psiPiPi_mass);  
   tree_->Branch("deltaR_J_p1", &deltaR1);
   tree_->Branch("deltaR_J_p2", &deltaR2);
+  tree_->Branch("cosAlpha", &pointingAngle);
 
   tree_->Branch("J_mass", &J_mass);
   tree_->Branch("J_px", &J_px);

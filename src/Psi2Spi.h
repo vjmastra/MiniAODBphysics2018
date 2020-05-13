@@ -76,6 +76,8 @@ public:
 //  bool IsTheSame(const reco::Track& tk, const pat::Muon& mu);
   bool IsTheSame(const pat::PackedCandidate& tk, const pat::Muon& mu);
   bool IsTheSame2(const pat::PackedCandidate& tk1, const pat::PackedCandidate& tk2); 
+  Double_t Distance(const Double_t p1[], const Double_t p2[]);
+  Double_t DistanceError(const Double_t p1[], const Double_t err1[], const Double_t p2[], const Double_t err2[]);
 private:
   virtual void beginJob() ;
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
@@ -120,8 +122,12 @@ private:
  
   // vertice primario CON mayor Pt
   unsigned int             nVtx;
-  float                    priVtxX, priVtxY, priVtxZ, priVtxXE, priVtxYE, priVtxZE, priVtxCL;
-  float                    priVtxXYE, priVtxXZE, priVtxYZE;
+  std::vector<float>       *priVtxX, *priVtxY, *priVtxZ, *priVtxXE, *priVtxYE, *priVtxZE, *priVtxCL;
+  std::vector<float>       *priVtxXYE, *priVtxXZE, *priVtxYZE;
+
+  std::vector<int>         *indexVtx, *nTracksFromPV;
+
+  std::vector<int>         *vRefMuP, *vRefMuM, *vRefPi1, *vRefPi2, *vRefPi3;
  
   // ********************************** ************************************************************************
 
@@ -155,6 +161,8 @@ private:
   std::vector<float>       *J_pt2, *J_px2, *J_py2, *J_pz2;
   std::vector<int>         *J_charge1, *J_charge2;
  
+  std::vector<float>       *flightLen, *flightLenErr, *flightLenSig;
+
   std::vector<float>	   *mu1_px_test, *mu1_py_test, *mu1_pz_test, *mu1_charge_test;
   std::vector<float>       *mu2_px_test, *mu2_py_test, *mu2_pz_test, *mu2_charge_test;
   std::vector<float>       *Jpsi_dca_test;

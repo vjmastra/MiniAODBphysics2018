@@ -113,6 +113,10 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   nVtx(0),
   priVtxX(0), priVtxY(0), priVtxZ(0), priVtxXE(0), priVtxYE(0), priVtxZE(0), priVtxCL(0),
   priVtxXYE(0), priVtxXZE(0), priVtxYZE(0),
+
+  indexVtx(0), nTracksFromPV(0),
+  
+  vRefMuP(0), vRefMuM(0), vRefPi1(0), vRefPi2(0), vRefPi3(0),
  
   // ************************ ****************************************************
 
@@ -137,6 +141,8 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   J_pt1(0), J_px1(0), J_py1(0), J_pz1(0), 
   J_pt2(0), J_px2(0), J_py2(0), J_pz2(0), 
   J_charge1(0), J_charge2(0),
+
+  flightLen(0), flightLenErr(0), flightLenSig(0),
   
   mu1_px_test(0), mu1_py_test(0), mu1_pz_test(0), mu1_charge_test(0),
   mu2_px_test(0), mu2_py_test(0), mu2_pz_test(0), mu2_charge_test(0),
@@ -198,25 +204,13 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //Now we get the primary vertex 
   // *********************************
 
-  reco::Vertex bestVtx;
-  reco::Vertex bestVtxBS;
+  reco::Vertex highestptVtx;
 
   // get primary vertex
   edm::Handle<std::vector<reco::Vertex> > recVtxs;
   iEvent.getByToken(primaryVertices_Label, recVtxs);
-  bestVtx = *(recVtxs->begin());
-  
-  priVtxX = bestVtx.x();
-  priVtxY = bestVtx.y();
-  priVtxZ = bestVtx.z();
-  priVtxXE = bestVtx.covariance(0, 0);
-  priVtxYE = bestVtx.covariance(1, 1);
-  priVtxZE = bestVtx.covariance(2, 2);
-  priVtxXYE = bestVtx.covariance(0, 1);
-  priVtxXZE = bestVtx.covariance(0, 2);
-  priVtxYZE = bestVtx.covariance(1, 2);
-  priVtxCL = ChiSquaredProbability((double)(bestVtx.chi2()),(double)(bestVtx.ndof())); 
 
+  highestptVtx = *(recVtxs->begin());
   nVtx = recVtxs->size();
 
   lumiblock = iEvent.id().luminosityBlock();
@@ -341,7 +335,6 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    
     }
   }
-
 
   //*****************************************
   //Let's begin by looking for J/psi->mu+mu-
@@ -593,7 +586,9 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
               continue;
 	    }		     
 
-            float primaryVertex[3] = {priVtxX, priVtxY, priVtxZ};
+            reco::Vertex bestVtx = highestptVtx;
+
+            float primaryVertex[3] = {(float)bestVtx.x(), (float)bestVtx.y(), (float)bestVtx.z()};
             float secundaryVertex[3] = {(*BDecayVertexMC).position().x(), (*BDecayVertexMC).position().y(), (*BDecayVertexMC).position().z()};
             float flightVec[3];
             for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
@@ -837,9 +832,17 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    // *********
 
    nVtx = 0;
-   priVtxX = 0; priVtxY = 0; priVtxZ = 0; 
-   priVtxXE = 0; priVtxYE = 0; priVtxZE = 0; priVtxCL = 0;
-   priVtxXYE = 0;   priVtxXZE = 0;   priVtxYZE = 0;
+   priVtxX->clear(); priVtxY->clear(); priVtxZ->clear();
+   priVtxXE->clear(); priVtxYE->clear(); priVtxZE->clear();
+   priVtxXYE->clear(); priVtxXZE->clear(); priVtxYZE->clear();
+   priVtxCL->clear();
+
+   indexVtx->clear(); nTracksFromPV->clear();
+
+   vRefMuP->clear(); vRefMuM->clear();
+   vRefPi1->clear(); vRefPi2->clear(); vRefPi3->clear();
+
+   flightLen->clear(); flightLenErr->clear(); flightLenSig->clear();
 
    BDecayVtxX->clear(); BDecayVtxY->clear(); BDecayVtxZ->clear(); 
    BDecayVtxXE->clear(); BDecayVtxYE->clear(); BDecayVtxZE->clear(); 
@@ -872,6 +875,43 @@ bool Psi2Spi::IsTheSame2(const pat::PackedCandidate& tk1, const pat::PackedCandi
   return false;
 }
 
+
+Double_t Psi2Spi::Distance(const Double_t p1[], const Double_t p2[]){
+  Double_t diff[3], diff2[3];
+  Double_t dist = 0;
+  for (int i = 0; i < 3; i++) {
+    diff[i] = p2[i]-p1[i];
+    diff2[i] = diff[i]*diff[i];
+    dist += diff2[i];
+  }
+  return TMath::Sqrt(dist);
+}
+
+Double_t Psi2Spi::DistanceError(const Double_t p1[], const Double_t err1[], const Double_t p2[], const Double_t err2[]){
+  Double_t diff[3];
+  for (int i = 0; i < 3; i++) {
+    diff[i] = fabs(p2[i]-p1[i]);
+  }
+  Double_t deriv2[6] = {diff[0]*diff[0], diff[1]*diff[1], diff[2]*diff[2], diff[0]*diff[1], diff[0]*diff[2], diff[1]*diff[2]};
+  for (int i = 0; i < 6; i++) {
+    deriv2[i] = fabs(deriv2[i]);
+  }
+  Double_t covar[6];
+  for (int i = 0; i < 6; i++) {
+    covar[i] = err1[i] + err2[i];
+  }
+  Double_t dist = 0;
+  Double_t distErr = 0;
+  for (int i = 0; i < 6; i++) {
+    distErr += deriv2[i]*covar[i];
+  }
+  distErr = TMath::Sqrt(distErr);
+  dist = Distance(p1, p2);
+  dist == 0 ? distErr = -1 : distErr = distErr/dist;
+  return distErr;
+}
+
+// ------------ method called once each job just before starting event loop  ------------
 
 void Psi2Spi::beginJob()
 {
@@ -947,21 +987,34 @@ void Psi2Spi::beginJob()
 
   // *************************
 
-  tree_->Branch("priVtxX",&priVtxX, "priVtxX/f");
-  tree_->Branch("priVtxY",&priVtxY, "priVtxY/f");
-  tree_->Branch("priVtxZ",&priVtxZ, "priVtxZ/f");
-  tree_->Branch("priVtxXE",&priVtxXE, "priVtxXE/f");
-  tree_->Branch("priVtxYE",&priVtxYE, "priVtxYE/f");
-  tree_->Branch("priVtxZE",&priVtxZE, "priVtxZE/f");
-  tree_->Branch("priVtxXYE",&priVtxXYE, "priVtxXYE/f");
-  tree_->Branch("priVtxXZE",&priVtxXZE, "priVtxXZE/f");
-  tree_->Branch("priVtxYZE",&priVtxYZE, "priVtxYZE/f");
-  tree_->Branch("priVtxCL",&priVtxCL, "priVtxCL/f");
+  tree_->Branch("priVtxX",&priVtxX);
+  tree_->Branch("priVtxY",&priVtxY);
+  tree_->Branch("priVtxZ",&priVtxZ);
+  tree_->Branch("priVtxXE",&priVtxXE);
+  tree_->Branch("priVtxYE",&priVtxYE);
+  tree_->Branch("priVtxZE",&priVtxZE);
+  tree_->Branch("priVtxXYE",&priVtxXYE);
+  tree_->Branch("priVtxXZE",&priVtxXZE);
+  tree_->Branch("priVtxYZE",&priVtxYZE);
+  tree_->Branch("priVtxCL",&priVtxCL);
+
+  tree_->Branch("indexVtx", &indexVtx);
+  tree_->Branch("nTracksFromPV", &nTracksFromPV);
+
+  tree_->Branch("vRefMuP", &vRefMuP);
+  tree_->Branch("vRefMuM", &vRefMuM);
+  tree_->Branch("vRefPi1", &vRefPi1);
+  tree_->Branch("vRefPi2", &vRefPi2);
+  tree_->Branch("vRefPi3", &vRefPi3);
 
   tree_->Branch("nVtx",       &nVtx);
   tree_->Branch("run",        &run,       "run/I");
   tree_->Branch("event",        &event,     "event/I");
   tree_->Branch("lumiblock",&lumiblock,"lumiblock/I");
+
+  tree_->Branch("flightLen", &flightLen);
+  tree_->Branch("flightLenErr", &flightLenErr);
+  tree_->Branch("flightLenSig", &flightLenSig);
 
   tree_->Branch("BDecayVtxX",&BDecayVtxX);
   tree_->Branch("BDecayVtxY",&BDecayVtxY);

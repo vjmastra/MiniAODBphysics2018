@@ -162,14 +162,14 @@ private:
   std::vector<int>         *J_charge1, *J_charge2;
  
   std::vector<float>       *flightLen, *flightLenErr, *flightLenSig;
-
+/*
   std::vector<float>	   *mu1_px_test, *mu1_py_test, *mu1_pz_test, *mu1_charge_test;
   std::vector<float>       *mu2_px_test, *mu2_py_test, *mu2_pz_test, *mu2_charge_test;
   std::vector<float>       *Jpsi_dca_test;
   std::vector<float>       *Jpsi_vx_test, *Jpsi_vy_test, *Jpsi_vz_test;
  
   std::vector<float>       *Jpsi_mass_test, *Jpsi_prob_test, *Jpsi_chi2_test;
-
+*/
   std::vector<float>       *J_chi2, *psi2S_chi2, *B_chi2; 
   std::vector<float>       *B_Prob, *J_Prob, *psi2S_Prob; 
 

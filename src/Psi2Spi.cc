@@ -143,14 +143,14 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   J_charge1(0), J_charge2(0),
 
   flightLen(0), flightLenErr(0), flightLenSig(0),
-  
+/*  
   mu1_px_test(0), mu1_py_test(0), mu1_pz_test(0), mu1_charge_test(0),
   mu2_px_test(0), mu2_py_test(0), mu2_pz_test(0), mu2_charge_test(0),
   Jpsi_dca_test(0),
   Jpsi_vx_test(0), Jpsi_vy_test(0), Jpsi_vz_test(0),
 
   Jpsi_mass_test(0), Jpsi_prob_test(0), Jpsi_chi2_test(0),
-
+*/
   J_chi2(0), psi2S_chi2(0), B_chi2(0),
   B_Prob(0), J_Prob(0), psi2S_Prob(0),
 
@@ -218,7 +218,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   event = iEvent.id().event(); 
  
   //Control loop on J/psi
-
+/*
   for(View<pat::Muon>::const_iterator iMuonA = thePATMuonHandle->begin(); iMuonA != thePATMuonHandle->end(); ++iMuonA) {
     for(View<pat::Muon>::const_iterator iMuonB = iMuonA+1; iMuonB != thePATMuonHandle->end(); ++iMuonB) {
    
@@ -335,7 +335,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    
     }
   }
-
+*/
   //*****************************************
   //Let's begin by looking for J/psi->mu+mu-
 
@@ -790,10 +790,11 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
  
    
    //fill the tree and clear the vectors
+/*
    if (nJpsi_test > 0) {
      treeTest_->Fill();
    }
-
+*/
    if (nB > 0 ) {
        //std::cout << "filling tree" << endl;
      tree_->Fill();
@@ -821,14 +822,14 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    J_chi2->clear(); psi2S_chi2->clear(); B_chi2->clear();
    B_Prob->clear(); J_Prob->clear(); psi2S_Prob->clear();
-
+/*
    mu1_px_test->clear(); mu1_py_test->clear(); mu1_pz_test->clear(); mu1_charge_test->clear();
    mu2_px_test->clear(); mu2_py_test->clear(); mu2_pz_test->clear(); mu2_charge_test->clear();
    Jpsi_dca_test->clear();
    Jpsi_vx_test->clear(); Jpsi_vy_test->clear(); Jpsi_vz_test->clear();
 
    Jpsi_mass_test->clear(); Jpsi_prob_test->clear(); Jpsi_chi2_test->clear();
-
+*/
    // *********
 
    nVtx = 0;
@@ -920,8 +921,9 @@ void Psi2Spi::beginJob()
 
   edm::Service<TFileService> fs;
   tree_ = fs->make<TTree>("ntuple","Bc->Psi2Spi ntuple");
+/*
   treeTest_ = fs->make<TTree>("test","Jpsi->mumu");
-
+*/
   tree_->Branch("nB",&nB,"nB/i");
   tree_->Branch("nMu",&nMu,"nMu/i");
   tree_->Branch("nJpsi",&nJpsi,"nJpsi/i");
@@ -1050,7 +1052,7 @@ void Psi2Spi::beginJob()
   tree_->Branch("mu2PF",&mu2PF);
   tree_->Branch("mu1loose",&mu1loose);
   tree_->Branch("mu2loose",&mu2loose);
-
+/*
   treeTest_->Branch("nJpsi_test",&nJpsi_test);
   treeTest_->Branch("mu1_px_test",&mu1_px_test);
   treeTest_->Branch("mu1_py_test",&mu1_py_test);
@@ -1067,6 +1069,7 @@ void Psi2Spi::beginJob()
   treeTest_->Branch("Jpsi_mass_test",&Jpsi_mass_test);
   treeTest_->Branch("Jpsi_prob_test",&Jpsi_prob_test);
   treeTest_->Branch("Jpsi_chi2_test",&Jpsi_chi2_test);
+*/
 }
 
 
@@ -1074,8 +1077,8 @@ void Psi2Spi::beginJob()
 void Psi2Spi::endJob() {
   tree_->GetDirectory()->cd();
   tree_->Write();
-  treeTest_->GetDirectory()->cd();
-  treeTest_->Write();
+//  treeTest_->GetDirectory()->cd();
+//  treeTest_->Write();
 }
 
 //define this as a plug-in

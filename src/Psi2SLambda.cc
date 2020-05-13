@@ -99,7 +99,9 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   isMC_(iConfig.getParameter<bool>("isMC")),
   OnlyGen_(iConfig.getParameter<bool>("OnlyGen")),
   doMC_ ( iConfig.getUntrackedParameter<bool>("doMC",false) ),
+
   tree_(0), 
+  treeTest_(0),
 
   mumC2(0), mumNHits(0), mumNPHits(0),
   mupC2(0), mupNHits(0), mupNPHits(0),
@@ -113,8 +115,11 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
 
   nVtx(0),
   priVtxX(0), priVtxY(0), priVtxZ(0), priVtxXE(0), priVtxYE(0), priVtxZE(0), priVtxCL(0),
-  priVtxXYE(0), priVtxXZE(0), priVtxYZE(0),
- 
+  priVtxXYE(0), priVtxXZE(0), priVtxYZE(0), 
+
+  indexVtx(0), nTracksFromPV(0),
+
+  vRefMuP(0), vRefMuM(0), vRefPi1(0), vRefPi2(0), vRefDau1(0), vRefDau2(0),
   // ************************ ****************************************************
 
   lBDecayVtxX(0), lBDecayVtxY(0), lBDecayVtxZ(0), lBDecayVtxXE(0), lBDecayVtxYE(0), lBDecayVtxZE(0),
@@ -146,6 +151,8 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   J_pt1(0), J_px1(0), J_py1(0), J_pz1(0), 
   J_pt2(0), J_px2(0), J_py2(0), J_pz2(0), 
   J_charge1(0), J_charge2(0),
+
+  flightLen(0), flightLenErr(0), flightLenSig(0),
 
   Jtest_mass(0), Jtest_prob(0),
 
@@ -205,25 +212,13 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   //Now we get the primary vertex 
   // *********************************
 
-  reco::Vertex bestVtx;
-  reco::Vertex bestVtxBS;
+  reco::Vertex highestptVtx;
 
   // get primary vertex
   edm::Handle<std::vector<reco::Vertex> > recVtxs;
   iEvent.getByToken(primaryVertices_Label, recVtxs);
-  bestVtx = *(recVtxs->begin());
-  
-  priVtxX = bestVtx.x();
-  priVtxY = bestVtx.y();
-  priVtxZ = bestVtx.z();
-  priVtxXE = bestVtx.covariance(0, 0);
-  priVtxYE = bestVtx.covariance(1, 1);
-  priVtxZE = bestVtx.covariance(2, 2);
-  priVtxXYE = bestVtx.covariance(0, 1);
-  priVtxXZE = bestVtx.covariance(0, 2);
-  priVtxYZE = bestVtx.covariance(1, 2);
-  priVtxCL = ChiSquaredProbability((double)(bestVtx.chi2()),(double)(bestVtx.ndof())); 
 
+  highestptVtx = *(recVtxs->begin());  
   nVtx = recVtxs->size();
 
   lumiblock = iEvent.id().luminosityBlock();
@@ -232,6 +227,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
  
   //Control loop on J/psi
 
+/*
   for(View<pat::Muon>::const_iterator iMuonA = thePATMuonHandle->begin(); iMuonA != thePATMuonHandle->end(); ++iMuonA) {
     for(View<pat::Muon>::const_iterator iMuonB = iMuonA+1; iMuonB != thePATMuonHandle->end(); ++iMuonB) {
    
@@ -264,7 +260,6 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if (dca < 0. || dca > 0.5) continue;
 
       ParticleMass muon_mass = 0.10565837;
-//      ParticleMass Jpsi_mass = 3.096916;
       float muon_sigma = muon_mass*1.e-6;
 
       KinematicParticleFactoryFromTransientTrack pFactory;
@@ -296,7 +291,6 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         //std::cout << "caught an exception in the psi vertex fit" << std::endl;
         continue;
       }
-
       Jtest_VertexFitTree->movePointerToTheTop();
 
       RefCountedKinematicParticle Jtest_vFit_noMC = Jtest_VertexFitTree->currentParticle();
@@ -312,12 +306,13 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         continue;
       }
 
+      //Calculate vertex distance from PV!!!!!!!!!!!!!
+
       //some loose cuts go here
       
-      if(Jtest_vFit_noMC->currentState().mass()<3.0 || Jtest_vFit_noMC->currentState().mass()>3.2) continue;
-   
+      if(Jtest_vFit_noMC->currentState().mass()<2.95 || Jtest_vFit_noMC->currentState().mass()>3.25) continue;
+        
       //Write
-
       nJpsi++;     
       Jtest_mass->push_back(Jtest_vFit_noMC->currentState().mass());
       Jtest_prob->push_back(Jtest_Prob_tmp);   
@@ -328,7 +323,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    
     }
   }
-
+*/
 
   //*****************************************
   //Let's begin by looking for J/psi->mu+mu-
@@ -336,15 +331,21 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   unsigned int nMu_tmp = thePATMuonHandle->size();
  
   for(View<pat::Muon>::const_iterator iMuon1 = thePATMuonHandle->begin(); iMuon1 != thePATMuonHandle->end(); ++iMuon1) { 
+
+    //cout << "muon1" << endl;
+    if((iMuon1->track()).isNull()) continue;
+    if(iMuon1->track()->pt()<4.0) continue;
+
     for(View<pat::Muon>::const_iterator iMuon2 = iMuon1+1; iMuon2 != thePATMuonHandle->end(); ++iMuon2) {  
       
+      //cout << "muon2" << endl;
       if(iMuon1==iMuon2) continue;
       if( (iMuon1->charge())*(iMuon2->charge()) == 1) continue;
 
       TrackRef glbTrackP;	  
       TrackRef glbTrackM;	  
   
-      if(iMuon1->charge() == 1){glbTrackP = iMuon1->track();}
+      if(iMuon1->charge() == 1) {glbTrackP = iMuon1->track();}
       if(iMuon1->charge() == -1){glbTrackM = iMuon1->track();}
   
       if(iMuon2->charge() == 1) {glbTrackP = iMuon2->track();}
@@ -355,7 +356,6 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         continue;
       }
 
-      if(iMuon1->track()->pt()<4.0) continue;
       if(iMuon2->track()->pt()<4.0) continue;
 
       if(!(glbTrackM->quality(reco::TrackBase::highPurity))) continue;
@@ -433,21 +433,23 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if(J_Prob_tmp<0.01) {
         continue;
       }
-	  
-      //some loose cuts go here
 
-      if(J_vFit_noMC->currentState().mass()<3.0 || J_vFit_noMC->currentState().mass()>3.2) continue;
-      
-      //jpsipipi
+      if(J_vFit_noMC->currentState().mass()<2.95 || J_vFit_noMC->currentState().mass()>3.25) continue;
+ 
+      //Match pions to J/psi for psi(2S) -> Jpsipipi
 
       for (View<pat::PackedCandidate>::const_iterator iTrack1 = thePATTrackHandle->begin(); iTrack1 != thePATTrackHandle->end(); ++iTrack1 ) {
+
+        if (!(iTrack1->hasTrackDetails())) continue;
+        if (iTrack1->pt()<0.7) continue; //min value 0.5 for 2017-2018, 0.95 for 2015-2016
+        if (!(iTrack1->trackHighPurity())) continue;
+
         for (View<pat::PackedCandidate>::const_iterator iTrack2 = iTrack1+1; iTrack2 != thePATTrackHandle->end(); ++iTrack2 ) {
 
+          if (!(iTrack2->hasTrackDetails())) continue;
           if (iTrack1==iTrack2) continue;
           if ((iTrack1->charge())*(iTrack2->charge()) != -1) continue;  //opposite charge
-          if (iTrack1->pt()<0.95) continue;
-          if (iTrack2->pt()<0.95) continue;
-          if (!(iTrack1->trackHighPurity())) continue;
+          if (iTrack2->pt()<0.7) continue;
           if (!(iTrack2->trackHighPurity())) continue;
           if (IsTheSame(*iTrack1,*iMuon1) || IsTheSame(*iTrack1,*iMuon2)) continue;
           if (IsTheSame(*iTrack2,*iMuon1) || IsTheSame(*iTrack2,*iMuon2)) continue;
@@ -460,24 +462,16 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           float chi = 0.;
           float ndf = 0.;
 
-          // Jpsipionpion invariant mass (before kinematic vertex fit)
+          // Jpsi pi pi invariant mass (before kinematic vertex fit)
           TLorentzVector pion14V, pion24V, Jpsi4V;
           pion14V.SetXYZM(iTrack1->px(),iTrack1->py(),iTrack1->pz(),pion_mass);
           pion24V.SetXYZM(iTrack2->px(),iTrack2->py(),iTrack2->pz(),pion_mass);
           Jpsi4V.SetXYZM(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z(),J_vFit_noMC->currentState().mass());          
-          float piPiMass = (pion14V + pion24V).M();
-          float psiPiPiMass = (pion14V + pion24V + Jpsi4V).M();       
-
-          if ( psiPiPiMass < 3 || psiPiPiMass > 5) continue;
-
-          float dR1_tmp;
-          float dR2_tmp;
-
-          dR1_tmp = Jpsi4V.DeltaR(pion14V);
-          dR2_tmp = Jpsi4V.DeltaR(pion24V);          
-          
-          if (dR1_tmp > 0.3) continue;
-          if (dR2_tmp > 0.3) continue;
+          float piPiMass = (pion14V + pion24V).M();   
+          float psiPiPiMass = (Jpsi4V + pion14V + pion24V).M();
+          if (psiPiPiMass < 3.3 || psiPiPiMass > 4.3) continue; 
+          float dR1_tmp = Jpsi4V.DeltaR(pion14V);
+          float dR2_tmp = Jpsi4V.DeltaR(pion24V);          
 
           // JPsi mass constraint is applied
 
@@ -502,10 +496,14 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           if (psi2S_Prob_tmp<0.01) continue;
 
           nPsi2S++;
+          //cout << nPsi2S << endl;
+          //Look for V0 (lambda) candidate
 
           if ( theV0PtrHandle->size()>0 && thePATMuonHandle->size()>=2 ) { 
             for ( vector<VertexCompositePtrCandidate>::const_iterator iVee = theV0PtrHandle->begin();   iVee != theV0PtrHandle->end(); ++iVee ) {
-	    //get Lam tracks from V0 candidate
+
+              //cout << "v0" << endl;
+ 	      //get tracks from V0 candidate
    	      vector<pat::PackedCandidate> v0daughters;
 	      vector<Track> theDaughterTracks;
 	      v0daughters.push_back( *(dynamic_cast<const pat::PackedCandidate *>(iVee->daughter(0))) );
@@ -563,7 +561,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   	      //some loose cuts go here
 		     
 	      //if(lambda_vFit_vertex_noMC->chiSquared()>50) continue;
-	      if(lambda_vFit_noMC->currentState().mass()< 1.0 || lambda_vFit_noMC->currentState().mass()> 1.2) continue;
+	      if(lambda_vFit_noMC->currentState().mass()< 1.09 || lambda_vFit_noMC->currentState().mass()> 1.14) continue;
 		     
 	      lambdaVertexFitTree->movePointerToTheFirstChild();
 	      RefCountedKinematicParticle T1CandMC = lambdaVertexFitTree->currentParticle();
@@ -630,7 +628,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	        continue;
 	      }
 	     
-	      if(lBCandMC->currentState().mass()< 5.0 || lBCandMC->currentState().mass()>6.0) continue;
+	      if(lBCandMC->currentState().mass()< 5.4 || lBCandMC->currentState().mass()>5.8) continue;
 	     
 	      if(lBDecayVertexMC->chiSquared()<0) {
                 //std::cout << " continue from negative chi2 = " << bDecayVertexMC->chiSquared() << endl;
@@ -642,15 +640,97 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                 continue;
 	      }		     
 
-              float primaryVertex[3] = {priVtxX, priVtxY, priVtxZ};
-              float secundaryVertex[3] = {(*lBDecayVertexMC).position().x(), (*lBDecayVertexMC).position().y(), (*lBDecayVertexMC).position().z()};
-              float flightVec[3];
-              for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
-              TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
-              TVector3 lBmomentum(lBCandMC->currentState().globalMomentum().x(), lBCandMC->currentState().globalMomentum().y(), lBCandMC->currentState().globalMomentum().z());
+              //cout << "b" << endl;
+              //Select PV that minimizes pointing angle
+
+              reco::Vertex bestVtxBSIP;
+              reco::Vertex vtxBSrf;
+
+              Double_t pVtxBSIPX_tmp = -10000.0;
+              Double_t pVtxBSIPY_tmp = -10000.0;
+              Double_t pVtxBSIPZ_tmp = -10000.0;
+              Double_t pVtxBSIPXE_tmp = -10000.0;
+              Double_t pVtxBSIPYE_tmp = -10000.0;
+              Double_t pVtxBSIPZE_tmp = -10000.0;
+              Double_t pVtxBSIPCL_tmp = -10000.0;
+              Double_t pVtxBSIPXYE_tmp = -10000.0;
+              Double_t pVtxBSIPXZE_tmp = -10000.0;
+              Double_t pVtxBSIPYZE_tmp = -10000.0;
+              Double_t lip = -100000.0;
+
+              int indexVtx_tmp = -1;
+              int nTracksFromPV_tmp = -1; 
+
+              int vertexRefMuP_tmp = -1;
+              int vertexRefMuM_tmp = -1;
+              int vertexRefPi1_tmp = -1;
+              int vertexRefPi2_tmp = -1;
+              int vertexRefDau1_tmp = -1;
+              int vertexRefDau2_tmp = -1;
+              for (size_t i = 0; i < recVtxs->size(); i++) {
+
+                const Vertex &vtxBS = (*recVtxs)[i];
+
+                vtxBSrf = vtxBS;
+
+                //Counting how many selected tracks come from PV candidate
+                
+                int temp = 0;
+                if (iTrack1->fromPV((int)i) > 2) {temp++; vertexRefPi1_tmp = (int)i;}
+                if (iTrack2->fromPV((int)i) > 2) {temp++; vertexRefPi2_tmp = (int)i;}
+                if (v0daughters[0].fromPV((int)i) > 2) {temp++; vertexRefDau1_tmp = (int)i;}
+                if (v0daughters[1].fromPV((int)i) > 2) {temp++; vertexRefDau2_tmp = (int)i;}
+                for (std::vector<TrackBaseRef>::const_iterator iTrack = vtxBS.tracks_begin(); iTrack != vtxBS.tracks_end(); iTrack++) {
+                  TrackRef trackRef = iTrack->castTo<TrackRef>();
+                  if (glbTrackP.key() == trackRef.key()) {temp++; vertexRefMuP_tmp = (int)i;}
+                  if (glbTrackM.key() == trackRef.key()) {temp++; vertexRefMuM_tmp = (int)i;}
+                  }
+
+                Double_t primaryVertex[3] = {vtxBSrf.x(), vtxBSrf.y(), vtxBSrf.z()};
+                Double_t secundaryVertex[3] = {(*lBDecayVertexMC).position().x(), (*lBDecayVertexMC).position().y(), (*lBDecayVertexMC).position().z()};
+                Double_t flightVec[3];
+                for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
+                TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
+                TVector3 lBmomentum(lBCandMC->currentState().globalMomentum().x(), lBCandMC->currentState().globalMomentum().y(), lBCandMC->currentState().globalMomentum().z());
 		     
-              double cos_alpha = TMath::Cos(flightDir.Angle(lBmomentum));
-              if (cos_alpha < 0.95) continue;
+                double cosAlphaXYb = TMath::Cos(flightDir.Angle(lBmomentum));
+                if (cosAlphaXYb > lip) {
+                  lip = cosAlphaXYb;
+                  indexVtx_tmp = i;
+                  nTracksFromPV_tmp = temp;
+                  bestVtxBSIP = vtxBSrf;
+                }
+                //i = recVtxs->size(); //uncomment this to always consider only the highest-sum-pt vertex
+              }
+
+              pVtxBSIPX_tmp = bestVtxBSIP.x();
+              pVtxBSIPY_tmp = bestVtxBSIP.y();
+              pVtxBSIPZ_tmp = bestVtxBSIP.z();
+              pVtxBSIPXE_tmp = bestVtxBSIP.covariance(0, 0);
+              pVtxBSIPYE_tmp = bestVtxBSIP.covariance(1, 1);
+              pVtxBSIPZE_tmp = bestVtxBSIP.covariance(2, 2);
+              pVtxBSIPXYE_tmp = bestVtxBSIP.covariance(0, 1);
+              pVtxBSIPXZE_tmp = bestVtxBSIP.covariance(0, 2);
+              pVtxBSIPYZE_tmp = bestVtxBSIP.covariance(1, 2);
+              pVtxBSIPCL_tmp = (TMath::Prob(bestVtxBSIP.chi2(), (int)bestVtxBSIP.ndof()));
+ 
+              //Flight distance
+              
+              Double_t flightLen_tmp, flightLenErr_tmp, flightLenSig_tmp;
+
+              Double_t pVtx[3] = {bestVtxBSIP.x(), bestVtxBSIP.y(), bestVtxBSIP.z()};
+              Double_t pVtxCov[6] = {bestVtxBSIP.covariance(0, 0), bestVtxBSIP.covariance(1, 1), bestVtxBSIP.covariance(2, 2), bestVtxBSIP.covariance(0, 1), bestVtxBSIP.covariance(0, 2), bestVtxBSIP.covariance(1, 2)}; //xx yy zz xy xz yz
+              Double_t sVtx[3] = {(*lBDecayVertexMC).position().x(), (*lBDecayVertexMC).position().y(), (*lBDecayVertexMC).position().z()};
+              Double_t sVtxCov[6] = {lBDecayVertexMC->error().cxx(), lBDecayVertexMC->error().cyy(), lBDecayVertexMC->error().czz(), lBDecayVertexMC->error().cyx(), lBDecayVertexMC->error().czx(), lBDecayVertexMC->error().czy()}; //xx yy zz xy xz yz
+
+              flightLen_tmp = Distance(pVtx, sVtx);
+              if (flightLen_tmp == 0) continue;
+              flightLenErr_tmp = DistanceError(pVtx, pVtxCov, sVtx, sVtxCov);
+              if (flightLenErr_tmp == 0) continue;
+              flightLenSig_tmp = flightLen_tmp/flightLenErr_tmp;
+
+              if (flightLenSig_tmp < 3) continue;
+
 
    	      // get children from final B fit
 	      psi2SVertexFitTree->movePointerToTheFirstChild();
@@ -716,7 +796,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
               deltaR1->push_back(dR1_tmp);
               deltaR2->push_back(dR2_tmp);
-              pointingAngle->push_back(cos_alpha);
+              pointingAngle->push_back(lip);
 
 	      lambda_mass->push_back( lambda_vFit_noMC->currentState().mass() );
 	      lambda_px->push_back( lambda_vFit_noMC->currentState().globalMomentum().x() );
@@ -757,7 +837,11 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      J_py2->push_back(psiMu2KP.momentum().y());
 	      J_pz2->push_back(psiMu2KP.momentum().z());
 	      J_charge2->push_back(mu2CandMC->currentState().particleCharge());
-  
+ 
+              flightLen->push_back(flightLen_tmp);
+              flightLenErr->push_back(flightLenErr_tmp);
+              flightLenSig->push_back(flightLenSig_tmp);
+ 
 	      lambda_chi2->push_back(lambda_vFit_vertex_noMC->chiSquared());
 	      J_chi2->push_back(J_vFit_vertex_noMC->chiSquared());
               psi2S_chi2->push_back( psi2SDecayVertexMC->chiSquared());
@@ -770,6 +854,27 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               J_Prob->push_back(J_Prob_tmp);
               psi2S_Prob->push_back( psi2S_Prob_tmp);
               lambda_Prob->push_back(lambda_Prob_tmp);
+
+              priVtxX->push_back(pVtxBSIPX_tmp);
+              priVtxY->push_back(pVtxBSIPY_tmp);
+              priVtxZ->push_back(pVtxBSIPZ_tmp);
+              priVtxXE->push_back(pVtxBSIPXE_tmp);
+              priVtxYE->push_back(pVtxBSIPYE_tmp);
+              priVtxZE->push_back(pVtxBSIPZE_tmp);
+              priVtxXYE->push_back(pVtxBSIPXYE_tmp);
+              priVtxXZE->push_back(pVtxBSIPXZE_tmp);
+              priVtxYZE->push_back(pVtxBSIPYZE_tmp);
+              priVtxCL->push_back(pVtxBSIPCL_tmp);
+
+              indexVtx->push_back(indexVtx_tmp);
+              nTracksFromPV->push_back(nTracksFromPV_tmp);             
+
+              vRefMuP->push_back(vertexRefMuP_tmp);
+              vRefMuM->push_back(vertexRefMuM_tmp);
+              vRefPi1->push_back(vertexRefPi1_tmp);
+              vRefPi2->push_back(vertexRefPi2_tmp);
+              vRefDau1->push_back(vertexRefDau1_tmp);
+              vRefDau2->push_back(vertexRefDau2_tmp);
 
 	      lBDecayVtxX->push_back((*lBDecayVertexMC).position().x());
 	      lBDecayVtxY->push_back((*lBDecayVertexMC).position().y());
@@ -814,10 +919,10 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 */
     	      // ************
 		  
-	      mu1soft->push_back(iMuon1->isSoftMuon(bestVtx) );
-	      mu2soft->push_back(iMuon2->isSoftMuon(bestVtx) );
-	      mu1tight->push_back(iMuon1->isTightMuon(bestVtx) );
-	      mu2tight->push_back(iMuon2->isTightMuon(bestVtx) );
+	      mu1soft->push_back(iMuon1->isSoftMuon(bestVtxBSIP) );
+	      mu2soft->push_back(iMuon2->isSoftMuon(bestVtxBSIP) );
+	      mu1tight->push_back(iMuon1->isTightMuon(bestVtxBSIP) );
+	      mu2tight->push_back(iMuon2->isTightMuon(bestVtxBSIP) );
 	      mu1PF->push_back(iMuon1->isPFMuon());
 	      mu2PF->push_back(iMuon2->isPFMuon());
 	      mu1loose->push_back(muon::isLooseMuon(*iMuon1));
@@ -829,10 +934,10 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      mupC2->push_back( glbTrackP->normalizedChi2() );
 	      mupNHits->push_back( glbTrackP->numberOfValidHits() );
 	      mupNPHits->push_back( glbTrackP->hitPattern().numberOfValidPixelHits() );
-              mumdxy->push_back(glbTrackM->dxy(bestVtx.position()) );
-	      mupdxy->push_back(glbTrackP->dxy(bestVtx.position()) );
-	      mumdz->push_back(glbTrackM->dz(bestVtx.position()) );
-	      mupdz->push_back(glbTrackP->dz(bestVtx.position()) );
+              mumdxy->push_back(glbTrackM->dxy(bestVtxBSIP.position()) );
+	      mupdxy->push_back(glbTrackP->dxy(bestVtxBSIP.position()) );
+	      mumdz->push_back(glbTrackM->dz(bestVtxBSIP.position()) );
+	      mupdz->push_back(glbTrackP->dz(bestVtxBSIP.position()) );
 	      muon_dca->push_back(dca);
  
 	      pi1dxy->push_back(v0daughters[0].dxy());
@@ -864,10 +969,13 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    }//muon1
  
    
-   //fill the tree and clear the vectors
+   //Fill the tree and clear the vectors
+
+
    if (nJpsi > 0) {
      treeTest_->Fill();
    }
+
 
    if (nlB > 0 ) {
        //std::cout << "filling tree" << endl;
@@ -894,6 +1002,8 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
    J_pt1->clear();  J_px1->clear();  J_py1->clear();  J_pz1->clear(), J_charge1->clear();
    J_pt2->clear();  J_px2->clear();  J_py2->clear();  J_pz2->clear(), J_charge2->clear();
+  
+   flightLen->clear(); flightLenErr->clear(); flightLenSig->clear();
 
    lambda_chi2->clear(); J_chi2->clear(); psi2S_chi2->clear(); lB_chi2->clear();
    lB_Prob->clear(); J_Prob->clear(); lambda_Prob->clear(); psi2S_Prob->clear();
@@ -902,9 +1012,16 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    // *********
 
    nVtx = 0;
-   priVtxX = 0; priVtxY = 0; priVtxZ = 0; 
-   priVtxXE = 0; priVtxYE = 0; priVtxZE = 0; priVtxCL = 0;
-   priVtxXYE = 0;   priVtxXZE = 0;   priVtxYZE = 0;
+   priVtxX->clear(); priVtxY->clear(); priVtxZ->clear();
+   priVtxXE->clear(); priVtxYE->clear(); priVtxZE->clear();
+   priVtxXYE->clear(); priVtxXZE->clear(); priVtxYZE->clear();
+   priVtxCL->clear();
+
+   indexVtx->clear(); nTracksFromPV->clear();
+
+   vRefMuP->clear(); vRefMuM->clear(); 
+   vRefPi1->clear(); vRefPi2->clear();
+   vRefDau1->clear(); vRefDau2->clear();
 
    lBDecayVtxX->clear(); lBDecayVtxY->clear(); lBDecayVtxZ->clear(); 
    lBDecayVtxXE->clear(); lBDecayVtxYE->clear(); lBDecayVtxZE->clear(); 
@@ -935,6 +1052,48 @@ bool Psi2SLambda::IsTheSame(const pat::PackedCandidate& tk, const pat::Muon& mu)
   double DeltaP   = fabs(mu.p()-tk.p());
   if (DeltaEta < 0.02 && DeltaP < 0.02) return true;
   return false;
+}
+
+bool Psi2SLambda::IsTheSame2(const pat::PackedCandidate& tk, const pat::PackedCandidate& tk2){
+  double DeltaEta = fabs(tk2.eta()-tk.eta());
+  double DeltaP   = fabs(tk2.p()-tk.p());
+  if (DeltaEta < 0.02 && DeltaP < 0.02) return true;
+  return false;
+}
+
+Double_t Psi2SLambda::Distance(const Double_t p1[], const Double_t p2[]){ 
+  Double_t diff[3], diff2[3];
+  Double_t dist = 0;
+  for (int i = 0; i < 3; i++) {
+    diff[i] = p2[i]-p1[i];
+    diff2[i] = diff[i]*diff[i];
+    dist += diff2[i];
+  }
+  return TMath::Sqrt(dist);
+}
+
+Double_t Psi2SLambda::DistanceError(const Double_t p1[], const Double_t err1[], const Double_t p2[], const Double_t err2[]){
+  Double_t diff[3];
+  for (int i = 0; i < 3; i++) {
+    diff[i] = fabs(p2[i]-p1[i]);
+  }
+  Double_t deriv2[6] = {diff[0]*diff[0], diff[1]*diff[1], diff[2]*diff[2], diff[0]*diff[1], diff[0]*diff[2], diff[1]*diff[2]};
+  for (int i = 0; i < 6; i++) {
+    deriv2[i] = fabs(deriv2[i]);
+  }
+  Double_t covar[6];
+  for (int i = 0; i < 6; i++) {
+    covar[i] = err1[i] + err2[i];
+  }
+  Double_t dist = 0;
+  Double_t distErr = 0;
+  for (int i = 0; i < 6; i++) {
+    distErr += deriv2[i]*covar[i];
+  }
+  distErr = TMath::Sqrt(distErr);
+  dist = Distance(p1, p2);
+  dist == 0 ? distErr = -1 : distErr = distErr/dist;
+  return distErr;
 }
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -1003,6 +1162,10 @@ void Psi2SLambda::beginJob()
   tree_->Branch("J_pz2", &J_pz2);
   tree_->Branch("J_charge2", &J_charge2);
 
+  tree_->Branch("flightLen", &flightLen);
+  tree_->Branch("flightLenErr", &flightLenErr);
+  tree_->Branch("flightLenSig", &flightLenSig);
+
   tree_->Branch("lB_chi2", &lB_chi2);
   tree_->Branch("lambda_chi2", &lambda_chi2);
   tree_->Branch("J_chi2", &J_chi2);
@@ -1014,17 +1177,27 @@ void Psi2SLambda::beginJob()
   tree_->Branch("psi2S_Prob", &psi2S_Prob);       
 
   // *************************
+  
+  tree_->Branch("priVtxX",&priVtxX);
+  tree_->Branch("priVtxY",&priVtxY);
+  tree_->Branch("priVtxZ",&priVtxZ);
+  tree_->Branch("priVtxXE",&priVtxXE);
+  tree_->Branch("priVtxYE",&priVtxYE);
+  tree_->Branch("priVtxZE",&priVtxZE);
+  tree_->Branch("priVtxXYE",&priVtxXYE);
+  tree_->Branch("priVtxXZE",&priVtxXZE);
+  tree_->Branch("priVtxYZE",&priVtxYZE);
+  tree_->Branch("priVtxCL",&priVtxCL);
 
-  tree_->Branch("priVtxX",&priVtxX, "priVtxX/f");
-  tree_->Branch("priVtxY",&priVtxY, "priVtxY/f");
-  tree_->Branch("priVtxZ",&priVtxZ, "priVtxZ/f");
-  tree_->Branch("priVtxXE",&priVtxXE, "priVtxXE/f");
-  tree_->Branch("priVtxYE",&priVtxYE, "priVtxYE/f");
-  tree_->Branch("priVtxZE",&priVtxZE, "priVtxZE/f");
-  tree_->Branch("priVtxXYE",&priVtxXYE, "priVtxXYE/f");
-  tree_->Branch("priVtxXZE",&priVtxXZE, "priVtxXZE/f");
-  tree_->Branch("priVtxYZE",&priVtxYZE, "priVtxYZE/f");
-  tree_->Branch("priVtxCL",&priVtxCL, "priVtxCL/f");
+  tree_->Branch("indexVtx", &indexVtx);
+  tree_->Branch("nTracksFromPV", &nTracksFromPV);
+
+  tree_->Branch("vRefMuP", &vRefMuP);
+  tree_->Branch("vRefMuM", &vRefMuM);
+  tree_->Branch("vRefPi1", &vRefPi1);
+  tree_->Branch("vRefPi2", &vRefPi2);
+  tree_->Branch("vRefDau1", &vRefDau1);
+  tree_->Branch("vRefDau2", &vRefDau2);
 
   tree_->Branch("nVtx",       &nVtx);
   tree_->Branch("run",        &run,       "run/I");
@@ -1088,6 +1261,7 @@ void Psi2SLambda::beginJob()
 
   treeTest_->Branch("Jtest_mass",&Jtest_mass);
   treeTest_->Branch("Jtest_prob",&Jtest_prob);
+
 }
 
 
@@ -1095,8 +1269,10 @@ void Psi2SLambda::beginJob()
 void Psi2SLambda::endJob() {
   tree_->GetDirectory()->cd();
   tree_->Write();
+
   treeTest_->GetDirectory()->cd();
   treeTest_->Write();
+
 }
 
 //define this as a plug-in

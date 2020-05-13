@@ -469,7 +469,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           Jpsi4V.SetXYZM(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z(),J_vFit_noMC->currentState().mass());          
           float piPiMass = (pion14V + pion24V).M();   
           float psiPiPiMass = (Jpsi4V + pion14V + pion24V).M();
-          if (psiPiPiMass < 3.3 || psiPiPiMass > 4.3) continue; 
+          if (psiPiPiMass < 3.3 || psiPiPiMass > 4.1) continue; //removes pion combinatorics - important speed up
           float dR1_tmp = Jpsi4V.DeltaR(pion14V);
           float dR2_tmp = Jpsi4V.DeltaR(pion24V);          
 

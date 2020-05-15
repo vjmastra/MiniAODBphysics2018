@@ -342,6 +342,10 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   unsigned int nMu_tmp = thePATMuonHandle->size();
  
   for(View<pat::Muon>::const_iterator iMuon1 = thePATMuonHandle->begin(); iMuon1 != thePATMuonHandle->end(); ++iMuon1) { 
+
+    if((iMuon1->track()).isNull()) continue;
+    if(iMuon1->track()->pt()<4.0) continue;
+
     for(View<pat::Muon>::const_iterator iMuon2 = iMuon1+1; iMuon2 != thePATMuonHandle->end(); ++iMuon2) {  
       
       if(iMuon1==iMuon2) continue;
@@ -361,7 +365,6 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         continue;
       }
 
-      if(iMuon1->track()->pt()<4.0) continue;
       if(iMuon2->track()->pt()<4.0) continue;
 
       if(!(glbTrackM->quality(reco::TrackBase::highPurity))) continue;
@@ -442,19 +445,23 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  
       //some loose cuts go here
 
-      if(J_vFit_noMC->currentState().mass()<3.0 || J_vFit_noMC->currentState().mass()>3.2) continue;
+      if(J_vFit_noMC->currentState().mass()<2.95 || J_vFit_noMC->currentState().mass()>3.25) continue;
  
       nJpsi++;     
       //jpsipipi
 
       for (View<pat::PackedCandidate>::const_iterator iTrack1 = thePATTrackHandle->begin(); iTrack1 != thePATTrackHandle->end(); ++iTrack1 ) {
+
+        if (!(iTrack1->hasTrackDetails())) continue;
+        if (iTrack1->pt()<0.7) continue; //min value 0.5 for 2017-2018, 0.95 for 2015-2016
+        if (!(iTrack1->trackHighPurity())) continue;
+
         for (View<pat::PackedCandidate>::const_iterator iTrack2 = iTrack1+1; iTrack2 != thePATTrackHandle->end(); ++iTrack2 ) {
 
           if (iTrack1==iTrack2) continue;
           if ((iTrack1->charge())*(iTrack2->charge()) != -1) continue;  //opposite charge
-          if (iTrack1->pt()<0.95) continue;
-          if (iTrack2->pt()<0.95) continue;
-          if (!(iTrack1->trackHighPurity())) continue;
+          if (!(iTrack2->hasTrackDetails())) continue;
+          if (iTrack2->pt()<0.7) continue;
           if (!(iTrack2->trackHighPurity())) continue;
           if (IsTheSame(*iTrack1,*iMuon1) || IsTheSame(*iTrack1,*iMuon2)) continue;
           if (IsTheSame(*iTrack2,*iMuon1) || IsTheSame(*iTrack2,*iMuon2)) continue;
@@ -477,16 +484,10 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           double psiPiPiMass = (psi2S4V).M();       
 
           if (piPiMass < 0.45) continue;
-          if (psiPiPiMass < 3.4 || psiPiPiMass > 4.2) continue;
+          if (psiPiPiMass < 3.4 || psiPiPiMass > 4.2) continue; //removes pion combinatorics - important speed up
 
-          float dR1_tmp;
-          float dR2_tmp;
-
-          dR1_tmp = Jpsi4V.DeltaR(pion14V);
-          dR2_tmp = Jpsi4V.DeltaR(pion24V);
-
-          if (dR1_tmp > 0.3) continue;
-          if (dR2_tmp > 0.3) continue; 
+          float dR1_tmp = Jpsi4V.DeltaR(pion14V);
+          float dR2_tmp = Jpsi4V.DeltaR(pion24V);
 
           // JPsi mass constraint is applied
 
@@ -505,7 +506,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           RefCountedKinematicParticle psi2SCandMC = psi2SVertexFitTree->currentParticle();          
           RefCountedKinematicVertex psi2SDecayVertexMC = psi2SVertexFitTree->currentDecayVertex();
           if (!psi2SDecayVertexMC->vertexIsValid()) continue;
-          if ((psi2SCandMC->currentState().mass() < 3.4) || (psi2SCandMC->currentState().mass() > 4.2) ) continue;
+          if ((psi2SCandMC->currentState().mass() < 3.5) || (psi2SCandMC->currentState().mass() > 4.1) ) continue;
 
           double psi2S_Prob_tmp = TMath::Prob(psi2SDecayVertexMC->chiSquared(),(int)psi2SDecayVertexMC->degreesOfFreedom());
           if (psi2S_Prob_tmp<0.01) continue;
@@ -515,7 +516,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           for(View<pat::PackedCandidate>::const_iterator iTrack3 = thePATTrackHandle->begin(); iTrack3 != thePATTrackHandle->end(); ++iTrack3) {
 
             if(iTrack3->charge()==0) continue;
-            if(iTrack3->pt()<0.95) continue;
+            if(!(iTrack3->hasTrackDetails())) continue;
+            if(iTrack3->pt()<0.7) continue;
             if(!(iTrack3->trackHighPurity())) continue;
 
             if ( IsTheSame(*iTrack3,*iMuon1) || IsTheSame(*iTrack3,*iMuon2) ) continue;
@@ -529,7 +531,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             TLorentzVector pion34V, Bcand4V;
             pion34V.SetXYZM(iTrack3->px(), iTrack3->py(), iTrack3->pz(), pion_mass);
             Bcand4V = psi2S4V + pion34V;
-            if ( Bcand4V.M()<5.0 || Bcand4V.M()>7.0 ) continue;
+            if ( Bcand4V.M()<5.9 || Bcand4V.M()>6.5 ) continue; 
 
 	    //Now we are ready to combine!
 	    // JPsi mass constraint is applied in the final Bd fit,
@@ -585,18 +587,95 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    if(B_Prob_tmp<0.01) {
               continue;
 	    }		     
+     
+            //Select PV that minimized the pointing angle
 
-            reco::Vertex bestVtx = highestptVtx;
+            reco::Vertex bestVtxBSIP;
+            reco::Vertex vtxBSrf;
 
-            float primaryVertex[3] = {(float)bestVtx.x(), (float)bestVtx.y(), (float)bestVtx.z()};
-            float secundaryVertex[3] = {(*BDecayVertexMC).position().x(), (*BDecayVertexMC).position().y(), (*BDecayVertexMC).position().z()};
-            float flightVec[3];
-            for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
-            TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
-            TVector3 Bmomentum(BCandMC->currentState().globalMomentum().x(), BCandMC->currentState().globalMomentum().y(), BCandMC->currentState().globalMomentum().z());
+            Double_t pVtxBSIPX_tmp = -10000.0;
+            Double_t pVtxBSIPY_tmp = -10000.0;
+            Double_t pVtxBSIPZ_tmp = -10000.0;
+            Double_t pVtxBSIPXE_tmp = -10000.0;
+            Double_t pVtxBSIPYE_tmp = -10000.0;
+            Double_t pVtxBSIPZE_tmp = -10000.0;
+            Double_t pVtxBSIPCL_tmp = -10000.0;
+            Double_t pVtxBSIPXYE_tmp = -10000.0;
+            Double_t pVtxBSIPXZE_tmp = -10000.0;
+            Double_t pVtxBSIPYZE_tmp = -10000.0;
+            Double_t lip = -100000.0;
 
-            double cos_alpha = TMath::Cos(flightDir.Angle(Bmomentum));
-            if (cos_alpha < 0.95) continue;
+            int indexVtx_tmp = -10;
+            int nTracksFromPV_tmp = -10;
+
+            int vertexRefMuP_tmp = -10;
+            int vertexRefMuM_tmp = -10;
+            int vertexRefPi1_tmp = -10;
+            int vertexRefPi2_tmp = -10;
+            int vertexRefPi3_tmp = -10;
+      
+            for (size_t i = 0; i < recVtxs->size(); i++) {
+
+              const Vertex &vtxBS = (*recVtxs)[i];
+              vtxBSrf = vtxBS;
+
+              //Counting how many selected tracks come from PV candidate
+              int temp = 0;
+              if (iTrack1->fromPV((int)i) > 2) {temp++;}
+              if (iTrack2->fromPV((int)i) > 2) {temp++;}
+              if (iTrack3->fromPV((int)i) > 2) {temp++;}
+              for (std::vector<TrackBaseRef>::const_iterator iTrack = vtxBS.tracks_begin(); iTrack != vtxBS.tracks_end(); iTrack++) {
+                TrackRef trackRef = iTrack->castTo<TrackRef>();
+                if (glbTrackP.key() == trackRef.key()) {temp++; vertexRefMuP_tmp = (int)i;}
+                if (glbTrackM.key() == trackRef.key()) {temp++; vertexRefMuM_tmp = (int)i;}
+              }
+
+              Double_t primaryVertex[3] = {vtxBSrf.x(), vtxBSrf.y(), vtxBSrf.z()};
+              Double_t secundaryVertex[3] = {(*BDecayVertexMC).position().x(), (*BDecayVertexMC).position().y(), (*BDecayVertexMC).position().z()};
+              Double_t flightVec[3];
+              for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
+              TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
+              TVector3 Bmomentum(BCandMC->currentState().globalMomentum().x(), BCandMC->currentState().globalMomentum().y(), BCandMC->currentState().globalMomentum().z());
+
+              double cosAlphaXYb = TMath::Cos(flightDir.Angle(Bmomentum));
+              if (cosAlphaXYb > lip) {
+                lip = cosAlphaXYb;
+                indexVtx_tmp = i;
+                nTracksFromPV_tmp = temp;
+                bestVtxBSIP = vtxBSrf;
+              }
+            }
+
+            vertexRefPi1_tmp = (int)iTrack1->vertexRef().key();
+            vertexRefPi2_tmp = (int)iTrack2->vertexRef().key();
+            vertexRefPi3_tmp = (int)iTrack3->vertexRef().key();            
+
+            pVtxBSIPX_tmp = bestVtxBSIP.x();
+            pVtxBSIPY_tmp = bestVtxBSIP.y();
+            pVtxBSIPZ_tmp = bestVtxBSIP.z();
+            pVtxBSIPXE_tmp = bestVtxBSIP.covariance(0, 0);
+            pVtxBSIPYE_tmp = bestVtxBSIP.covariance(1, 1);
+            pVtxBSIPZE_tmp = bestVtxBSIP.covariance(2, 2);
+            pVtxBSIPXYE_tmp = bestVtxBSIP.covariance(0, 1);
+            pVtxBSIPXZE_tmp = bestVtxBSIP.covariance(0, 2);
+            pVtxBSIPYZE_tmp = bestVtxBSIP.covariance(1, 2);
+            pVtxBSIPCL_tmp = (TMath::Prob(bestVtxBSIP.chi2(), (int)bestVtxBSIP.ndof()));
+
+            //Flight distance
+            
+            Double_t flightLen_tmp, flightLenErr_tmp, flightLenSig_tmp;
+
+            Double_t pVtx[3] = {bestVtxBSIP.x(), bestVtxBSIP.y(), bestVtxBSIP.z()};
+            Double_t pVtxCov[6] = {bestVtxBSIP.covariance(0, 0), bestVtxBSIP.covariance(1, 1), bestVtxBSIP.covariance(2, 2), bestVtxBSIP.covariance(0, 1), bestVtxBSIP.covariance(0, 2), bestVtxBSIP.covariance(1, 2)}; //xx yy zz xy xz yz
+            Double_t sVtx[3] = {(*BDecayVertexMC).position().x(), (*BDecayVertexMC).position().y(), (*BDecayVertexMC).position().z()};
+            Double_t sVtxCov[6] = {BDecayVertexMC->error().cxx(), BDecayVertexMC->error().cyy(), BDecayVertexMC->error().czz(), BDecayVertexMC->error().cyx(), BDecayVertexMC->error().czx(), BDecayVertexMC->error().czy()}; //xx yy zz xy xz yz
+
+            flightLen_tmp = Distance(pVtx, sVtx);
+            if (flightLen_tmp == 0) continue;
+            flightLenErr_tmp = DistanceError(pVtx, pVtxCov, sVtx, sVtxCov);
+            if (flightLenErr_tmp == 0) continue;
+            flightLenSig_tmp = flightLen_tmp/flightLenErr_tmp;
+            if (flightLenSig_tmp < 3) continue;
 
             // get children from final B fit
 	    BVertexFitTree->movePointerToTheFirstChild();
@@ -668,7 +747,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             psiPiPi_mass->push_back( psi2SCandMC->currentState().mass());
             deltaR1->push_back(dR1_tmp);
             deltaR2->push_back(dR2_tmp);
-            pointingAngle->push_back(cos_alpha);
+            pointingAngle->push_back(lip);
 
             J_mass->push_back( J_vFit_noMC->currentState().mass() );
             J_px->push_back( J_vFit_noMC->currentState().globalMomentum().x() );
@@ -718,6 +797,30 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    B_Prob->push_back(B_Prob_tmp); 
             J_Prob->push_back(J_Prob_tmp);
             psi2S_Prob->push_back( psi2S_Prob_tmp);
+
+            priVtxX->push_back(pVtxBSIPX_tmp);
+            priVtxY->push_back(pVtxBSIPY_tmp);
+            priVtxZ->push_back(pVtxBSIPZ_tmp);
+            priVtxXE->push_back(pVtxBSIPXE_tmp);
+            priVtxYE->push_back(pVtxBSIPYE_tmp);
+            priVtxZE->push_back(pVtxBSIPZE_tmp);
+            priVtxXYE->push_back(pVtxBSIPXYE_tmp);
+            priVtxXZE->push_back(pVtxBSIPXZE_tmp);
+            priVtxYZE->push_back(pVtxBSIPYZE_tmp);
+            priVtxCL->push_back(pVtxBSIPCL_tmp);
+
+            indexVtx->push_back(indexVtx_tmp);
+            nTracksFromPV->push_back(nTracksFromPV_tmp);
+
+            vRefMuP->push_back(vertexRefMuP_tmp);
+            vRefMuM->push_back(vertexRefMuM_tmp);
+            vRefPi1->push_back(vertexRefPi1_tmp);
+            vRefPi2->push_back(vertexRefPi2_tmp);
+            vRefPi3->push_back(vertexRefPi3_tmp);
+
+            flightLen->push_back(flightLen_tmp);
+            flightLenErr->push_back(flightLenErr_tmp);
+            flightLenSig->push_back(flightLenSig_tmp);
  
 	    BDecayVtxX->push_back((*BDecayVertexMC).position().x());
 	    BDecayVtxY->push_back((*BDecayVertexMC).position().y());
@@ -752,10 +855,10 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 */
     	      // ************
 		  
-	    mu1soft->push_back(iMuon1->isSoftMuon(bestVtx) );
-	    mu2soft->push_back(iMuon2->isSoftMuon(bestVtx) );
-	    mu1tight->push_back(iMuon1->isTightMuon(bestVtx) );
-	    mu2tight->push_back(iMuon2->isTightMuon(bestVtx) );
+	    mu1soft->push_back(iMuon1->isSoftMuon(bestVtxBSIP) );
+	    mu2soft->push_back(iMuon2->isSoftMuon(bestVtxBSIP) );
+	    mu1tight->push_back(iMuon1->isTightMuon(bestVtxBSIP) );
+	    mu2tight->push_back(iMuon2->isTightMuon(bestVtxBSIP) );
 	    mu1PF->push_back(iMuon1->isPFMuon());
 	    mu2PF->push_back(iMuon2->isPFMuon());
 	    mu1loose->push_back(muon::isLooseMuon(*iMuon1));
@@ -767,10 +870,10 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    mupC2->push_back( glbTrackP->normalizedChi2() );
 	    mupNHits->push_back( glbTrackP->numberOfValidHits() );
 	    mupNPHits->push_back( glbTrackP->hitPattern().numberOfValidPixelHits() );
-            mumdxy->push_back(glbTrackM->dxy(bestVtx.position()) );
-	    mupdxy->push_back(glbTrackP->dxy(bestVtx.position()) );
-	    mumdz->push_back(glbTrackM->dz(bestVtx.position()) );
-	    mupdz->push_back(glbTrackP->dz(bestVtx.position()) );
+            mumdxy->push_back(glbTrackM->dxy(bestVtxBSIP.position()) );
+	    mupdxy->push_back(glbTrackP->dxy(bestVtxBSIP.position()) );
+	    mumdz->push_back(glbTrackM->dz(bestVtxBSIP.position()) );
+	    mupdz->push_back(glbTrackP->dz(bestVtxBSIP.position()) );
 	    muon_dca->push_back(dca);
  
 	    // try refitting the primary without the tracks in the B reco candidate		   

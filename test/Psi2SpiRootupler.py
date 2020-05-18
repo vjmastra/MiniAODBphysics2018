@@ -11,7 +11,7 @@ from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, '102X_dataRun2_v12')
 #process.GlobalTag = GlobalTag(process.GlobalTag, '94X_dataRun2_ReReco_EOY17_v1', '')
 
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True), SkipEvent = cms.untracked.vstring('ProductNotFound'))
 process.options.allowUnscheduled = cms.untracked.bool(True)
 #process.load("FWCore.MessageLogger.MessageLogger_cfi")
@@ -29,18 +29,19 @@ process.source = cms.Source("PoolSource",
  )
 )
 
-#process.triggerSelection = cms.EDFilter("TriggerResultsFilter",
-#                                        triggerConditions = cms.vstring('HLT_Dimuon20_Jpsi_Barrel_Seagulls_v*',
+process.triggerSelection = cms.EDFilter("TriggerResultsFilter",
+                                        triggerConditions = cms.vstring(
+#                                                                        'HLT_Dimuon20_Jpsi_Barrel_Seagulls_v*',
 #                                                                        'HLT_Dimuon25_Jpsi_v*',
 #                                                                        'HLT_DoubleMu4_3_Jpsi_Displaced_v*',
 #                                                                        'HLT_DoubleMu4_JpsiTrkTrk_Displaced_v*',
-#                                                                        'HLT_DoubleMu4_JpsiTrk_Displaced_v*',
+                                                                        'HLT_DoubleMu4_JpsiTrk_Displaced_v*'
 #                                                                        'HLT_DoubleMu4_Jpsi_Displaced_v*'                                   
-#                                                                       ),
-#                                        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
-#                                        l1tResults = cms.InputTag( "" ),
-#                                        throw = cms.bool(False)
-#                                        )
+                                                                       ),
+                                        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
+                                        l1tResults = cms.InputTag( "" ),
+                                        throw = cms.bool(False)
+                                        )
 
 process.load("myAnalyzers.JPsiKsPAT.slimmedMuonsTriggerMatcher_cfi")  
 
@@ -62,10 +63,11 @@ process.TFileService = cms.Service("TFileService",
 #process.p = cms.Path(process.mySequence)
 
 process.p = cms.Path(
-#		process.triggerSelection*
+		process.triggerSelection*
 		process.slimmedMuonsWithTriggerSequence*
 		process.rootuple
 		)
+
 #process.p = cms.Path(process.rootuple)
 
 

@@ -63,6 +63,8 @@
 #include "RecoVertex/VertexPrimitives/interface/BasicSingleVertexState.h"
 #include "RecoVertex/VertexPrimitives/interface/VertexState.h"
 
+#include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
+
 #include "TFile.h"
 #include "TTree.h"
 
@@ -90,9 +92,8 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   trakCollection_label(consumes<edm::View<pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("Trak"))),
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
+  triggerCollection_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("TriggerInput"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
-//triggerObjects_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("objects"))),   
-
   genParticles_ ( iConfig.getUntrackedParameter<std::string>("GenParticles",std::string("genParticles")) ),
   OnlyBest_(iConfig.getParameter<bool>("OnlyBest")),
   isMC_(iConfig.getParameter<bool>("isMC")),
@@ -188,17 +189,31 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(dimuon_Label,thePATMuonHandle);
 
   edm::Handle<edm::TriggerResults> triggerBits;
-//  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
-
   iEvent.getByToken(triggerResults_Label, triggerBits);
-//  iEvent.getByToken(triggerObjects_, triggerObjects); 
-//  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
 
-//  for ( size_t iTrigObj = 0; iTrigObj < triggerObjects->size(); ++iTrigObj ) {
-//    pat::TriggerObjectStandAlone obj( triggerObjects->at( iTrigObj ) );
-//    obj.unpackPathNames(names);
-//    obj.unpackFilterLabels(iEvent, *triggerBits);
-//  }
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerCollection;
+  iEvent.getByToken(triggerCollection_, triggerCollection);
+
+  //Trigger Collections
+
+  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
+  const pat::TriggerObjectStandAloneCollection unPackedCollection;
+
+  int printTest = 1;
+  if (printTest) {
+    for (unsigned int i = 0; i  < triggerBits->size(); i++) {
+      if (triggerBits->accept(i)) {
+        std::cout << "Trigger " << names.triggerName(i) << endl;
+      }
+    }
+    printTest = 0;
+  }
+
+  for (pat::TriggerObjectStandAlone trig : *triggerCollection) {
+      trig.unpackPathNames(names);
+      trig.unpackFilterLabels(iEvent, *triggerBits);  
+      unPackedCollection.push_back(trig);
+  }
 
   // *********************************
   //Now we get the primary vertex 
@@ -677,6 +692,18 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             flightLenSig_tmp = flightLen_tmp/flightLenErr_tmp;
             if (flightLenSig_tmp < 3) continue;
 
+            //Trigger matching for pions
+/*
+            for (size_t iTrigObj = 0; iTrigObj < trigCollection.size(); iTrigObj++) {
+              cout << trigCollection.size() << "\n";
+              bool flag1, flag2, flag3;
+              flag1 = MatchByDRDPt(*iTrack1, trigCollection[iTrigObj]);
+              flag2 = MatchByDRDPt(*iTrack2, trigCollection[iTrigObj]);
+              flag3 = MatchByDRDPt(*iTrack3, trigCollection[iTrigObj]);
+              cout << flag1 << " " << flag2 << " " << flag3 << endl;
+            }
+*/
+
             // get children from final B fit
 	    BVertexFitTree->movePointerToTheFirstChild();
 	    RefCountedKinematicParticle mu1CandMC = BVertexFitTree->currentParticle();
@@ -831,29 +858,6 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    BDecayVtxXYE->push_back(BDecayVertexMC->error().cyx());
 	    BDecayVtxXZE->push_back(BDecayVertexMC->error().czx());
 	    BDecayVtxYZE->push_back(BDecayVertexMC->error().czy());
-
- // ********************* muon-trigger-machint**************** 
-/*		   
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t1 = iMuon1->triggerObjectMatchesByFilter("hltDisplacedmumuFilterDimuon25Jpsis");
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t1 = iMuon2->triggerObjectMatchesByFilter("hltDisplacedmumuFilterDimuon25Jpsis");
- 		   
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t2 = iMuon1->triggerObjectMatchesByFilter("hltJpsiTkVertexFilter");
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t2 = iMuon2->triggerObjectMatchesByFilter("hltJpsiTkVertexFilter");
-		   
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t4 = iMuon1->triggerObjectMatchesByFilter("hltJpsiTkTkVertexFilterPhiKstar");
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t4 = iMuon2->triggerObjectMatchesByFilter("hltJpsiTkTkVertexFilterPhiKstar");
-
-	      int tri_Dim25_tmp = 0, tri_JpsiTk_tmp = 0,  tri_JpsiTkTk_tmp = 0;
-		   
-	      if (muHLTMatches1_t1.size() > 0 && muHLTMatches2_t1.size() > 0) tri_Dim25_tmp = 1;
-	      if (muHLTMatches1_t2.size() > 0 && muHLTMatches2_t2.size() > 0) tri_JpsiTk_tmp = 1;
-	      if (muHLTMatches1_t4.size() > 0 && muHLTMatches2_t4.size() > 0) tri_JpsiTkTk_tmp = 1;
-		   
-	      tri_Dim25->push_back( tri_Dim25_tmp );	       
-	      tri_JpsiTk->push_back( tri_JpsiTk_tmp );
-              tri_JpsiTkTk->push_back( tri_JpsiTkTk_tmp );
-*/
-    	      // ************
 		  
 	    mu1soft->push_back(iMuon1->isSoftMuon(bestVtxBSIP) );
 	    mu2soft->push_back(iMuon2->isSoftMuon(bestVtxBSIP) );
@@ -968,6 +972,10 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 bool Psi2Spi::IsTheSame(const pat::PackedCandidate& tk, const pat::Muon& mu){
   double DeltaEta = fabs(mu.eta()-tk.eta());
   double DeltaP   = fabs(mu.p()-tk.p());
+  if (DeltaP > double(M_PI)) {
+    DeltaP -= double(2*M_PI);
+    DeltaP  = fabs(DeltaP);
+  }
   if (DeltaEta < 0.02 && DeltaP < 0.02) return true;
   return false;
 }
@@ -975,10 +983,13 @@ bool Psi2Spi::IsTheSame(const pat::PackedCandidate& tk, const pat::Muon& mu){
 bool Psi2Spi::IsTheSame2(const pat::PackedCandidate& tk1, const pat::PackedCandidate& tk2){
   double DeltaEta = fabs(tk1.eta()-tk2.eta());
   double DeltaP   = fabs(tk1.p()-tk2.p());
+  if (DeltaP > double(M_PI)) {
+    DeltaP -= double(2*M_PI);
+    DeltaP  = fabs(DeltaP);
+  }
   if (DeltaEta < 0.02 && DeltaP < 0.02) return true;
   return false;
 }
-
 
 Double_t Psi2Spi::Distance(const Double_t p1[], const Double_t p2[]){
   Double_t diff[3], diff2[3];
@@ -1013,6 +1024,27 @@ Double_t Psi2Spi::DistanceError(const Double_t p1[], const Double_t err1[], cons
   dist = Distance(p1, p2);
   dist == 0 ? distErr = -1 : distErr = distErr/dist;
   return distErr;
+}
+
+float Psi2Spi::DeltaR(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2){
+  float p1 = t1.phi();
+  float p2 = t2.phi();
+  float e1 = t1.eta();
+  float e2 = t2.eta();
+  float de = e1-e2;
+  auto dp=std::abs(p1-p2);
+  if (dp>float(M_PI)) dp-=float(2*M_PI);
+  return sqrt(de*de + dp*dp);
+}
+
+float Psi2Spi::DeltaPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2){
+  return (fabs(t1.pt()-t2.pt())/t2.pt());
+}
+
+bool Psi2Spi::MatchByDRDPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2){
+  bool ptFlag = DeltaPt(t1, t2) < 2.0;
+  bool dRFlag = DeltaR(t1, t2)  < 0.01; //from Adriano's DiMuonDiTrackProducer.cc code
+  return ptFlag && dRFlag;
 }
 
 // ------------ method called once each job just before starting event loop  ------------

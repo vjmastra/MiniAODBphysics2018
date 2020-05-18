@@ -78,6 +78,10 @@ public:
   bool IsTheSame2(const pat::PackedCandidate& tk1, const pat::PackedCandidate& tk2); 
   Double_t Distance(const Double_t p1[], const Double_t p2[]);
   Double_t DistanceError(const Double_t p1[], const Double_t err1[], const Double_t p2[], const Double_t err2[]);
+  float DeltaR(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2);
+  float DeltaPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2);
+  bool MatchByDRDPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2);
+
 private:
   virtual void beginJob() ;
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
@@ -91,8 +95,8 @@ private:
   edm::EDGetTokenT<edm::View<pat::PackedCandidate>> trakCollection_label;
   edm::EDGetTokenT<reco::VertexCollection> primaryVertices_Label;
   edm::EDGetTokenT<reco::BeamSpot> BSLabel_;
+  edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerCollection_;
   edm::EDGetTokenT<edm::TriggerResults> triggerResults_Label;
-//  edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerObjects_;
 
   std::string genParticles_;
   bool OnlyBest_;

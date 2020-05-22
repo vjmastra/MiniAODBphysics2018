@@ -29,18 +29,19 @@ process.source = cms.Source("PoolSource",
  )
 )
 
-#process.triggerSelection = cms.EDFilter("TriggerResultsFilter",
-#                                        triggerConditions = cms.vstring('HLT_Dimuon20_Jpsi_Barrel_Seagulls_v*',
+process.triggerSelection = cms.EDFilter("TriggerResultsFilter",
+                                        triggerConditions = cms.vstring(
+#                                                                        'HLT_Dimuon20_Jpsi_Barrel_Seagulls_v*',
 #                                                                        'HLT_Dimuon25_Jpsi_v*',
 #                                                                        'HLT_DoubleMu4_3_Jpsi_Displaced_v*',
 #                                                                        'HLT_DoubleMu4_JpsiTrkTrk_Displaced_v*',
-#                                                                        'HLT_DoubleMu4_JpsiTrk_Displaced_v*',
+                                                                        'HLT_DoubleMu4_JpsiTrk_Displaced_v*'
 #                                                                        'HLT_DoubleMu4_Jpsi_Displaced_v*'                                   
-#                                                                       ),
-#                                        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
-#                                        l1tResults = cms.InputTag( "" ),
-#                                        throw = cms.bool(False)
-#                                        )
+                                                                       ),
+                                        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
+                                        l1tResults = cms.InputTag( "" ),
+                                        throw = cms.bool(False)
+                                        )
 
 process.load("myAnalyzers.JPsiKsPAT.slimmedMuonsTriggerMatcher_cfi")  
 
@@ -62,7 +63,7 @@ process.TFileService = cms.Service("TFileService",
 #process.p = cms.Path(process.mySequence)
 
 process.p = cms.Path(
-#		process.triggerSelection*
+		process.triggerSelection*
 		process.slimmedMuonsWithTriggerSequence*
 		process.rootuple
 		)

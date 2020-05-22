@@ -91,7 +91,7 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
-  triggerObjects_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("objects"))),
+  triggerObjects_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("TriggerInput"))),
   v0PtrCollection_(consumes<reco::VertexCompositePtrCandidateCollection>(iConfig.getParameter<edm::InputTag>("secundaryVerticesPtr"))),	       
 
   genParticles_ ( iConfig.getUntrackedParameter<std::string>("GenParticles",std::string("genParticles")) ),
@@ -101,26 +101,25 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   doMC_ ( iConfig.getUntrackedParameter<bool>("doMC",false) ),
 
   tree_(0), 
-  treeTest_(0),
+//  treeTest_(0),
 
   mumC2(0), mumNHits(0), mumNPHits(0),
   mupC2(0), mupNHits(0), mupNPHits(0),
   mumdxy(0), mupdxy(0), mumdz(0), mupdz(0),
   muon_dca(0),
 
-  tri_Dim25(0), tri_JpsiTk(0), tri_JpsiTkTk(0),
-
   mu1soft(0), mu2soft(0), mu1tight(0), mu2tight(0), 
   mu1PF(0), mu2PF(0), mu1loose(0), mu2loose(0),
+
+  muAcc(0), muTrig(0), weight(0),
 
   nVtx(0),
   priVtxX(0), priVtxY(0), priVtxZ(0), priVtxXE(0), priVtxYE(0), priVtxZE(0), priVtxCL(0),
   priVtxXYE(0), priVtxXZE(0), priVtxYZE(0), 
 
   indexVtx(0), nTracksFromPV(0),
-
-  vRefMuP(0), vRefMuM(0), vRefPi1(0), vRefPi2(0), vRefDau1(0), vRefDau2(0),
-  // ************************ ****************************************************
+  vRefPi1(0), vRefPi2(0), vRefDau1(0), vRefDau2(0),
+  trigMatchPi1(0), trigMatchPi2(0),
 
   lBDecayVtxX(0), lBDecayVtxY(0), lBDecayVtxZ(0), lBDecayVtxXE(0), lBDecayVtxYE(0), lBDecayVtxZE(0),
   lBDecayVtxXYE(0), lBDecayVtxXZE(0), lBDecayVtxYZE(0),
@@ -129,7 +128,9 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   VDecayVtxXYE(0), VDecayVtxXZE(0), VDecayVtxYZE(0), 
 
   // *******************************************************
-  nlB(0), nMu(0), nJpsi(0), nPsi2S(0),
+  nlB(0), nMu(0), 
+//  nJpsi(0), 
+  nPsi2S(0),
   lB_mass(0), lB_px(0), lB_py(0), lB_pz(0),
 
   piPi_mass(0), psiPiPi_mass(0),
@@ -139,13 +140,13 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   lambda_mass(0), lambda_px(0), lambda_py(0), lambda_pz(0),
   lambda_pt1(0), lambda_px1(0), lambda_py1(0), lambda_pz1(0), 
   lambda_pt2(0), lambda_px2(0), lambda_py2(0), lambda_pz2(0), 
-
-  lambda_px1_track(0), lambda_py1_track(0), lambda_pz1_track(0), 
-  lambda_px2_track(0), lambda_py2_track(0), lambda_pz2_track(0), 
-
-  pi1dxy(0), pi2dxy(0), pi1dz(0), pi2dz(0),
-  pi1dxy_e(0), pi2dxy_e(0), pi1dz_e(0), pi2dz_e(0),
   lambda_charge1(0), lambda_charge2(0),
+
+  pi1_pt(0), pi1_px(0), pi1_py(0), pi1_pz(0), pi1_charge(0),
+  pi2_pt(0), pi2_px(0), pi2_py(0), pi2_pz(0), pi2_charge(0),
+
+  dau1dxy(0), dau2dxy(0), dau1dz(0), dau2dz(0),
+  dau1dxy_e(0), dau2dxy_e(0), dau1dz_e(0), dau2dz_e(0),
 
   J_mass(0), J_px(0), J_py(0), J_pz(0),
   J_pt1(0), J_px1(0), J_py1(0), J_pz1(0), 
@@ -154,7 +155,10 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
 
   flightLen(0), flightLenErr(0), flightLenSig(0),
 
-  Jtest_mass(0), Jtest_prob(0),
+  d0ValPi1(0), d0ErrPi1(0), d0SigPi1(0),
+  d0ValPi2(0), d0ErrPi2(0), d0SigPi2(0),
+
+//  Jtest_mass(0), Jtest_prob(0),
 
   lambda_chi2(0), J_chi2(0), psi2S_chi2(0), lB_chi2(0),
   lB_Prob(0), J_Prob(0), lambda_Prob(0), psi2S_Prob(0),
@@ -196,14 +200,19 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iEvent.getByToken(dimuon_Label,thePATMuonHandle);
 
   edm::Handle<edm::TriggerResults> triggerBits;
-  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerCollection;
 
   iEvent.getByToken(triggerResults_Label, triggerBits);
-  iEvent.getByToken(triggerObjects_, triggerObjects); 
+  iEvent.getByToken(triggerObjects_, triggerCollection); 
   const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
-
-  for ( size_t iTrigObj = 0; iTrigObj < triggerObjects->size(); ++iTrigObj ) {
-    pat::TriggerObjectStandAlone obj( triggerObjects->at( iTrigObj ) );
+/*
+  for ( unsigned int i = 0; i < triggerBits->size(); i++) {
+    if (triggerBits->accept(i)) std::cout << names.triggerName(i) << "\n";
+  }
+  cout << endl;
+*/
+  for ( size_t iTrigObj = 0; iTrigObj < triggerCollection->size(); ++iTrigObj ) {
+    pat::TriggerObjectStandAlone obj( triggerCollection->at( iTrigObj ) );
     obj.unpackPathNames(names);
     obj.unpackFilterLabels(iEvent, *triggerBits);
   }
@@ -332,13 +341,11 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
  
   for(View<pat::Muon>::const_iterator iMuon1 = thePATMuonHandle->begin(); iMuon1 != thePATMuonHandle->end(); ++iMuon1) { 
 
-    //cout << "muon1" << endl;
     if((iMuon1->track()).isNull()) continue;
     if(iMuon1->track()->pt()<4.0) continue;
 
     for(View<pat::Muon>::const_iterator iMuon2 = iMuon1+1; iMuon2 != thePATMuonHandle->end(); ++iMuon2) {  
       
-      //cout << "muon2" << endl;
       if(iMuon1==iMuon2) continue;
       if( (iMuon1->charge())*(iMuon2->charge()) == 1) continue;
 
@@ -437,7 +444,6 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if(J_vFit_noMC->currentState().mass()<2.95 || J_vFit_noMC->currentState().mass()>3.25) continue;
  
       //Match pions to J/psi for psi(2S) -> Jpsipipi
-
       for (View<pat::PackedCandidate>::const_iterator iTrack1 = thePATTrackHandle->begin(); iTrack1 != thePATTrackHandle->end(); ++iTrack1 ) {
 
         if (!(iTrack1->hasTrackDetails())) continue;
@@ -446,9 +452,9 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
         for (View<pat::PackedCandidate>::const_iterator iTrack2 = iTrack1+1; iTrack2 != thePATTrackHandle->end(); ++iTrack2 ) {
 
-          if (!(iTrack2->hasTrackDetails())) continue;
           if (iTrack1==iTrack2) continue;
           if ((iTrack1->charge())*(iTrack2->charge()) != -1) continue;  //opposite charge
+          if (!(iTrack2->hasTrackDetails())) continue;
           if (iTrack2->pt()<0.7) continue;
           if (!(iTrack2->trackHighPurity())) continue;
           if (IsTheSame(*iTrack1,*iMuon1) || IsTheSame(*iTrack1,*iMuon2)) continue;
@@ -469,7 +475,9 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           Jpsi4V.SetXYZM(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z(),J_vFit_noMC->currentState().mass());          
           float piPiMass = (pion14V + pion24V).M();   
           float psiPiPiMass = (Jpsi4V + pion14V + pion24V).M();
-          if (psiPiPiMass < 3.3 || psiPiPiMass > 4.1) continue; //removes pion combinatorics - important speed up
+          if (piPiMass < 0.3) continue;
+          if (psiPiPiMass < 3.4 || psiPiPiMass > 4.2) continue; //removes pion combinatorics - important speed up
+     
           float dR1_tmp = Jpsi4V.DeltaR(pion14V);
           float dR2_tmp = Jpsi4V.DeltaR(pion24V);          
 
@@ -490,7 +498,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           RefCountedKinematicParticle psi2SCandMC = psi2SVertexFitTree->currentParticle();          
           RefCountedKinematicVertex psi2SDecayVertexMC = psi2SVertexFitTree->currentDecayVertex();
           if (!psi2SDecayVertexMC->vertexIsValid()) continue;
-          if ((psi2SCandMC->currentState().mass() < 3.5) || (psi2SCandMC->currentState().mass() > 3.9) ) continue;
+          if ((psi2SCandMC->currentState().mass() < 3.5) || (psi2SCandMC->currentState().mass() > 4.1) ) continue;
 
           double psi2S_Prob_tmp = TMath::Prob(psi2SDecayVertexMC->chiSquared(),(int)psi2SDecayVertexMC->degreesOfFreedom());
           if (psi2S_Prob_tmp<0.01) continue;
@@ -640,11 +648,10 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                 continue;
 	      }		     
 
-              //cout << "b" << endl;
               //Select PV that minimizes pointing angle
 
               reco::Vertex bestVtxBSIP;
-              reco::Vertex vtxBSrf;
+              reco::Vertex vtxBS;
 
               Double_t pVtxBSIPX_tmp = -10000.0;
               Double_t pVtxBSIPY_tmp = -10000.0;
@@ -658,50 +665,45 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               Double_t pVtxBSIPYZE_tmp = -10000.0;
               Double_t lip = -100000.0;
 
-              int indexVtx_tmp = -1;
-              int nTracksFromPV_tmp = -1; 
+              int indexVtx_tmp = -10;
+              int nTracksFromPV_tmp = -10; 
 
-              int vertexRefMuP_tmp = -1;
-              int vertexRefMuM_tmp = -1;
               int vertexRefPi1_tmp = -1;
               int vertexRefPi2_tmp = -1;
               int vertexRefDau1_tmp = -1;
               int vertexRefDau2_tmp = -1;
+
               for (size_t i = 0; i < recVtxs->size(); i++) {
-
-                const Vertex &vtxBS = (*recVtxs)[i];
-
-                vtxBSrf = vtxBS;
-
+                vtxBS = (*recVtxs)[i];
                 //Counting how many selected tracks come from PV candidate
-                
                 int temp = 0;
-                if (iTrack1->fromPV((int)i) > 2) {temp++; vertexRefPi1_tmp = (int)i;}
-                if (iTrack2->fromPV((int)i) > 2) {temp++; vertexRefPi2_tmp = (int)i;}
-                if (v0daughters[0].fromPV((int)i) > 2) {temp++; vertexRefDau1_tmp = (int)i;}
-                if (v0daughters[1].fromPV((int)i) > 2) {temp++; vertexRefDau2_tmp = (int)i;}
-                for (std::vector<TrackBaseRef>::const_iterator iTrack = vtxBS.tracks_begin(); iTrack != vtxBS.tracks_end(); iTrack++) {
-                  TrackRef trackRef = iTrack->castTo<TrackRef>();
-                  if (glbTrackP.key() == trackRef.key()) {temp++; vertexRefMuP_tmp = (int)i;}
-                  if (glbTrackM.key() == trackRef.key()) {temp++; vertexRefMuM_tmp = (int)i;}
-                  }
-
-                Double_t primaryVertex[3] = {vtxBSrf.x(), vtxBSrf.y(), vtxBSrf.z()};
+                if (iTrack1->fromPV((int)i) > 2) {temp++;}
+                if (iTrack2->fromPV((int)i) > 2) {temp++;}
+                if (v0daughters[0].fromPV((int)i) > 2) {temp++;}
+                if (v0daughters[1].fromPV((int)i) > 2) {temp++;}
+                //Pointing angle computation
+                Double_t primaryVertex[3] = {vtxBS.x(), vtxBS.y(), vtxBS.z()};
                 Double_t secundaryVertex[3] = {(*lBDecayVertexMC).position().x(), (*lBDecayVertexMC).position().y(), (*lBDecayVertexMC).position().z()};
                 Double_t flightVec[3];
                 for (int i = 0; i < 3; i++) flightVec[i] = secundaryVertex[i] - primaryVertex[i];
                 TVector3 flightDir(flightVec[0], flightVec[1], flightVec[2]);
                 TVector3 lBmomentum(lBCandMC->currentState().globalMomentum().x(), lBCandMC->currentState().globalMomentum().y(), lBCandMC->currentState().globalMomentum().z());
-		     
+		//best PV selection
                 double cosAlphaXYb = TMath::Cos(flightDir.Angle(lBmomentum));
                 if (cosAlphaXYb > lip) {
                   lip = cosAlphaXYb;
                   indexVtx_tmp = i;
                   nTracksFromPV_tmp = temp;
-                  bestVtxBSIP = vtxBSrf;
+                  bestVtxBSIP = vtxBS;
                 }
-                //i = recVtxs->size(); //uncomment this to always consider only the highest-sum-pt vertex
               }
+
+              if (lip < 0.9) continue;
+
+              vertexRefPi1_tmp = (int)iTrack1->vertexRef().key();
+              vertexRefPi2_tmp = (int)iTrack2->vertexRef().key();
+              vertexRefDau1_tmp = v0daughters[0].vertexRef().key();
+              vertexRefDau2_tmp = v0daughters[1].vertexRef().key();
 
               pVtxBSIPX_tmp = bestVtxBSIP.x();
               pVtxBSIPY_tmp = bestVtxBSIP.y();
@@ -728,9 +730,31 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               flightLenErr_tmp = DistanceError(pVtx, pVtxCov, sVtx, sVtxCov);
               if (flightLenErr_tmp == 0) continue;
               flightLenSig_tmp = flightLen_tmp/flightLenErr_tmp;
-
               if (flightLenSig_tmp < 3) continue;
 
+              //Trigger Matching for the two pions
+
+              unsigned int objMatchedForTrack1_tmp = 0;
+              unsigned int objMatchedForTrack2_tmp = 0;
+
+              float ptTrack1_tmp = iTrack1->pt();
+              float ptTrack2_tmp = iTrack2->pt();
+
+              float d0Track1_tmp    = iTrack1->dxy();
+              float d0Track2_tmp    = iTrack2->dxy();
+              float d0ErrTrack1_tmp = iTrack1->dxyError();
+              float d0ErrTrack2_tmp = iTrack2->dxyError();
+
+              float d0SigTrack1_tmp = (d0ErrTrack1_tmp == 0) ? 0 : fabs(d0Track1_tmp/d0ErrTrack1_tmp);
+              float d0SigTrack2_tmp = (d0ErrTrack2_tmp == 0) ? 0 : fabs(d0Track2_tmp/d0ErrTrack2_tmp);
+
+              for (pat::TriggerObjectStandAlone obj : *triggerCollection) {
+                if(MatchByDRDPt(*iTrack1, obj)) objMatchedForTrack1_tmp++;
+                if(MatchByDRDPt(*iTrack2, obj)) objMatchedForTrack2_tmp++;
+              }
+
+              bool triggerFlagPion1_tmp = (objMatchedForTrack1_tmp > 0 && d0SigTrack1_tmp > 2.0 && ptTrack1_tmp > 1.2);
+              bool triggerFlagPion2_tmp = (objMatchedForTrack2_tmp > 0 && d0SigTrack2_tmp > 2.0 && ptTrack2_tmp > 1.2);          
 
    	      // get children from final B fit
 	      psi2SVertexFitTree->movePointerToTheFirstChild();
@@ -812,18 +836,12 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      lambda_px1->push_back(lambdaProtonKP.momentum().x());
 	      lambda_py1->push_back(lambdaProtonKP.momentum().y());
 	      lambda_pz1->push_back(lambdaProtonKP.momentum().z());
-	      lambda_px1_track->push_back(v0daughters[0].px());
-	      lambda_py1_track->push_back(v0daughters[0].py());
-	      lambda_pz1_track->push_back(v0daughters[0].pz());
 	      lambda_charge1->push_back(T1CandMC->currentState().particleCharge());
  
               lambda_pt2->push_back(lambdap2vec.perp());
 	      lambda_px2->push_back(lambdaPionKP.momentum().x());
 	      lambda_py2->push_back(lambdaPionKP.momentum().y());
 	      lambda_pz2->push_back(lambdaPionKP.momentum().z());
-	      lambda_px2_track->push_back(v0daughters[1].px());
-	      lambda_py2_track->push_back(v0daughters[1].py());
-	      lambda_pz2_track->push_back(v0daughters[1].pz());
 	      lambda_charge2->push_back(T2CandMC->currentState().particleCharge());
  
 	      J_pt1->push_back(Jp1vec.perp());
@@ -838,9 +856,28 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      J_pz2->push_back(psiMu2KP.momentum().z());
 	      J_charge2->push_back(mu2CandMC->currentState().particleCharge());
  
+              pi1_pt->push_back(ptTrack1_tmp);
+              pi1_px->push_back(iTrack1->px());
+              pi1_py->push_back(iTrack1->py());
+              pi1_pz->push_back(iTrack1->pz());
+              pi1_charge->push_back(iTrack1->charge());
+
+              pi2_pt->push_back(ptTrack2_tmp);
+              pi2_px->push_back(iTrack2->px());
+              pi2_py->push_back(iTrack2->py());
+              pi2_pz->push_back(iTrack2->pz());
+              pi2_charge->push_back(iTrack2->charge());
+
               flightLen->push_back(flightLen_tmp);
               flightLenErr->push_back(flightLenErr_tmp);
               flightLenSig->push_back(flightLenSig_tmp);
+
+              d0ValPi1->push_back(d0Track1_tmp);
+              d0ErrPi1->push_back(d0ErrTrack1_tmp);
+              d0SigPi1->push_back(d0SigTrack1_tmp);
+              d0ValPi2->push_back(d0Track2_tmp);
+              d0ErrPi2->push_back(d0ErrTrack2_tmp);
+              d0SigPi2->push_back(d0SigTrack2_tmp);
  
 	      lambda_chi2->push_back(lambda_vFit_vertex_noMC->chiSquared());
 	      J_chi2->push_back(J_vFit_vertex_noMC->chiSquared());
@@ -869,12 +906,13 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               indexVtx->push_back(indexVtx_tmp);
               nTracksFromPV->push_back(nTracksFromPV_tmp);             
 
-              vRefMuP->push_back(vertexRefMuP_tmp);
-              vRefMuM->push_back(vertexRefMuM_tmp);
               vRefPi1->push_back(vertexRefPi1_tmp);
               vRefPi2->push_back(vertexRefPi2_tmp);
               vRefDau1->push_back(vertexRefDau1_tmp);
               vRefDau2->push_back(vertexRefDau2_tmp);
+
+              trigMatchPi1->push_back(triggerFlagPion1_tmp);
+              trigMatchPi2->push_back(triggerFlagPion2_tmp);
 
 	      lBDecayVtxX->push_back((*lBDecayVertexMC).position().x());
 	      lBDecayVtxY->push_back((*lBDecayVertexMC).position().y());
@@ -897,26 +935,26 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      VDecayVtxYZE->push_back( lambda_vFit_vertex_noMC->error().czy() );
 
  // ********************* muon-trigger-machint**************** 
-/*		   
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t1 = iMuon1->triggerObjectMatchesByFilter("hltDisplacedmumuFilterDimuon25Jpsis");
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t1 = iMuon2->triggerObjectMatchesByFilter("hltDisplacedmumuFilterDimuon25Jpsis");
+		   
+//	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t1 = iMuon1->triggerObjectMatchesByFilter("hltDisplacedmumuFilterDimuon25Jpsis");
+//	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t1 = iMuon2->triggerObjectMatchesByFilter("hltDisplacedmumuFilterDimuon25Jpsis");
  		   
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t2 = iMuon1->triggerObjectMatchesByFilter("hltJpsiTkVertexFilter");
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t2 = iMuon2->triggerObjectMatchesByFilter("hltJpsiTkVertexFilter");
+//	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t2 = iMuon1->triggerObjectMatchesByFilter("hltJpsiTkVertexFilter");
+//	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t2 = iMuon2->triggerObjectMatchesByFilter("hltJpsiTkVertexFilter");
 		   
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t4 = iMuon1->triggerObjectMatchesByFilter("hltJpsiTkTkVertexFilterPhiKstar");
-	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t4 = iMuon2->triggerObjectMatchesByFilter("hltJpsiTkTkVertexFilterPhiKstar");
+//	      const pat::TriggerObjectStandAloneCollection muHLTMatches1_t4 = iMuon1->triggerObjectMatchesByFilter("hltJpsiTkTkVertexFilterPhiKstar");
+//	      const pat::TriggerObjectStandAloneCollection muHLTMatches2_t4 = iMuon2->triggerObjectMatchesByFilter("hltJpsiTkTkVertexFilterPhiKstar");
 
-	      int tri_Dim25_tmp = 0, tri_JpsiTk_tmp = 0,  tri_JpsiTkTk_tmp = 0;
+//	      int tri_Dim25_tmp = 0, tri_JpsiTk_tmp = 0,  tri_JpsiTkTk_tmp = 0;
 		   
-	      if (muHLTMatches1_t1.size() > 0 && muHLTMatches2_t1.size() > 0) tri_Dim25_tmp = 1;
-	      if (muHLTMatches1_t2.size() > 0 && muHLTMatches2_t2.size() > 0) tri_JpsiTk_tmp = 1;
-	      if (muHLTMatches1_t4.size() > 0 && muHLTMatches2_t4.size() > 0) tri_JpsiTkTk_tmp = 1;
+//	      if (muHLTMatches1_t1.size() > 0 && muHLTMatches2_t1.size() > 0) tri_Dim25_tmp = 1;
+//	      if (muHLTMatches1_t2.size() > 0 && muHLTMatches2_t2.size() > 0) tri_JpsiTk_tmp = 1;
+//	      if (muHLTMatches1_t4.size() > 0 && muHLTMatches2_t4.size() > 0) tri_JpsiTkTk_tmp = 1;
 		   
-	      tri_Dim25->push_back( tri_Dim25_tmp );	       
-	      tri_JpsiTk->push_back( tri_JpsiTk_tmp );
-              tri_JpsiTkTk->push_back( tri_JpsiTkTk_tmp );
-*/
+//	      tri_Dim25->push_back( tri_Dim25_tmp );	       
+//	      tri_JpsiTk->push_back( tri_JpsiTk_tmp );
+//            tri_JpsiTkTk->push_back( tri_JpsiTkTk_tmp );
+
     	      // ************
 		  
 	      mu1soft->push_back(iMuon1->isSoftMuon(bestVtxBSIP) );
@@ -940,15 +978,15 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      mupdz->push_back(glbTrackP->dz(bestVtxBSIP.position()) );
 	      muon_dca->push_back(dca);
  
-	      pi1dxy->push_back(v0daughters[0].dxy());
-	      pi2dxy->push_back(v0daughters[1].dxy());
-	      pi1dz->push_back(v0daughters[0].dz());
-	      pi2dz->push_back(v0daughters[1].dz());
+	      dau1dxy->push_back(v0daughters[0].dxy());
+	      dau2dxy->push_back(v0daughters[1].dxy());
+	      dau1dz->push_back(v0daughters[0].dz());
+	      dau2dz->push_back(v0daughters[1].dz());
  
-	      pi1dxy_e->push_back(v0daughters[0].dxyError());
-	      pi2dxy_e->push_back(v0daughters[1].dxyError());
-	      pi1dz_e->push_back(v0daughters[0].dzError());
-	      pi2dz_e->push_back(v0daughters[1].dzError());
+	      dau1dxy_e->push_back(v0daughters[0].dxyError());
+	      dau2dxy_e->push_back(v0daughters[1].dxyError());
+	      dau1dz_e->push_back(v0daughters[0].dzError());
+	      dau2dz_e->push_back(v0daughters[1].dzError());
 
 	      // try refitting the primary without the tracks in the B reco candidate		   
 		  
@@ -971,11 +1009,11 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    
    //Fill the tree and clear the vectors
 
-
+/*
    if (nJpsi > 0) {
      treeTest_->Fill();
    }
-
+*/
 
    if (nlB > 0 ) {
        //std::cout << "filling tree" << endl;
@@ -983,7 +1021,9 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    }
    // *********
 
-   nlB = 0; nMu = 0; nJpsi = 0; nPsi2S = 0;
+   nlB = 0; nMu = 0; 
+//   nJpsi = 0; 
+   nPsi2S = 0;
 
    lB_mass->clear();    lB_px->clear();    lB_py->clear();    lB_pz->clear();
    lambda_mass->clear(); lambda_px->clear(); lambda_py->clear(); lambda_pz->clear();
@@ -997,18 +1037,21 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    lambda_pt1->clear(); lambda_px1->clear(); lambda_py1->clear(); lambda_pz1->clear(); lambda_charge1->clear(); 
    lambda_pt2->clear(); lambda_px2->clear(); lambda_py2->clear(); lambda_pz2->clear(); lambda_charge2->clear(); 
 
-   lambda_px1_track->clear(); lambda_py1_track->clear(); lambda_pz1_track->clear(); 
-   lambda_px2_track->clear(); lambda_py2_track->clear(); lambda_pz2_track->clear(); 
-
    J_pt1->clear();  J_px1->clear();  J_py1->clear();  J_pz1->clear(), J_charge1->clear();
    J_pt2->clear();  J_px2->clear();  J_py2->clear();  J_pz2->clear(), J_charge2->clear();
-  
+
+   pi1_pt->clear(); pi1_px->clear(); pi1_py->clear(); pi1_pz->clear(); pi1_charge->clear();
+   pi2_pt->clear(); pi2_px->clear(); pi2_py->clear(); pi2_pz->clear(); pi2_charge->clear();
+ 
+   d0ValPi1->clear(); d0ErrPi1->clear(); d0SigPi1->clear();
+   d0ValPi2->clear(); d0ErrPi2->clear(); d0SigPi2->clear();
+
    flightLen->clear(); flightLenErr->clear(); flightLenSig->clear();
 
    lambda_chi2->clear(); J_chi2->clear(); psi2S_chi2->clear(); lB_chi2->clear();
    lB_Prob->clear(); J_Prob->clear(); lambda_Prob->clear(); psi2S_Prob->clear();
 
-   Jtest_mass->clear(); Jtest_prob->clear(); 
+//   Jtest_mass->clear(); Jtest_prob->clear(); 
    // *********
 
    nVtx = 0;
@@ -1019,9 +1062,9 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
    indexVtx->clear(); nTracksFromPV->clear();
 
-   vRefMuP->clear(); vRefMuM->clear(); 
    vRefPi1->clear(); vRefPi2->clear();
    vRefDau1->clear(); vRefDau2->clear();
+   trigMatchPi1->clear(); trigMatchPi2->clear();
 
    lBDecayVtxX->clear(); lBDecayVtxY->clear(); lBDecayVtxZ->clear(); 
    lBDecayVtxXE->clear(); lBDecayVtxYE->clear(); lBDecayVtxZE->clear(); 
@@ -1031,16 +1074,14 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    VDecayVtxXE->clear(); VDecayVtxYE->clear(); VDecayVtxZE->clear();
    VDecayVtxXYE->clear(); VDecayVtxXZE->clear(); VDecayVtxYZE->clear();
   
-   pi1dxy->clear(); pi2dxy->clear(); pi1dz->clear(); pi2dz->clear();
-   pi1dxy_e->clear(); pi2dxy_e->clear(); pi1dz_e->clear(); pi2dz_e->clear();
+   dau1dxy->clear(); dau2dxy->clear(); dau1dz->clear(); dau2dz->clear();
+   dau1dxy_e->clear(); dau2dxy_e->clear(); dau1dz_e->clear(); dau2dz_e->clear();
 
    mumC2->clear();
    mumNHits->clear(); mumNPHits->clear();
    mupC2->clear();
    mupNHits->clear(); mupNPHits->clear();
    mumdxy->clear(); mupdxy->clear(); mumdz->clear(); mupdz->clear(); muon_dca->clear();
-
-   tri_Dim25->clear(); tri_JpsiTk->clear(); tri_JpsiTkTk->clear();
       
    mu1soft->clear(); mu2soft->clear(); mu1tight->clear(); mu2tight->clear();
    mu1PF->clear(); mu2PF->clear(); mu1loose->clear(); mu2loose->clear(); 
@@ -1096,6 +1137,27 @@ Double_t Psi2SLambda::DistanceError(const Double_t p1[], const Double_t err1[], 
   return distErr;
 }
 
+float Psi2SLambda::DeltaR(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2){
+  float p1 = t1.phi();
+  float p2 = t2.phi();
+  float e1 = t1.eta();
+  float e2 = t2.eta();
+  float de = e1-e2;
+  auto dp=std::abs(p1-p2);
+  if (dp>float(M_PI)) dp-=float(2*M_PI);
+  return sqrt(de*de + dp*dp);
+}
+
+float Psi2SLambda::DeltaPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2){
+  return (fabs(t1.pt()-t2.pt())/t2.pt());
+}
+
+bool Psi2SLambda::MatchByDRDPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2){
+  bool ptFlag = DeltaPt(t1, t2) < 2.0;
+  bool dRFlag = DeltaR(t1, t2)  < 0.01; //from Adriano's DiMuonDiTrackProducer.cc code
+  return ptFlag && dRFlag;
+}
+
 // ------------ method called once each job just before starting event loop  ------------
 
 void Psi2SLambda::beginJob()
@@ -1105,10 +1167,11 @@ void Psi2SLambda::beginJob()
 
   edm::Service<TFileService> fs;
   tree_ = fs->make<TTree>("ntuple","Lambdab->Psi2S Lambda ntuple");
-  treeTest_ = fs->make<TTree>("test","Jpsi->mumu");
+//  treeTest_ = fs->make<TTree>("test","Jpsi->mumu");
 
   tree_->Branch("nlB",&nlB,"nlB/i");
   tree_->Branch("nMu",&nMu,"nMu/i");
+//  tree_->Branch("nPsi2S",&nPsi2S,"nPsi2S/i");
 
   tree_->Branch("lB_mass", &lB_mass);
   tree_->Branch("lB_px", &lB_px);
@@ -1136,18 +1199,12 @@ void Psi2SLambda::beginJob()
   tree_->Branch("lambda_px1", &lambda_px1);
   tree_->Branch("lambda_py1", &lambda_py1);
   tree_->Branch("lambda_pz1", &lambda_pz1);
-  tree_->Branch("lambda_px1_track", &lambda_px1_track);
-  tree_->Branch("lambda_py1_track", &lambda_py1_track);
-  tree_->Branch("lambda_pz1_track", &lambda_pz1_track);
   tree_->Branch("lambda_charge1", &lambda_charge1); 
  
   tree_->Branch("lambda_pt2", &lambda_pt2);
   tree_->Branch("lambda_px2", &lambda_px2);
   tree_->Branch("lambda_py2", &lambda_py2);
   tree_->Branch("lambda_pz2", &lambda_pz2);
-  tree_->Branch("lambda_px2_track", &lambda_px2_track);
-  tree_->Branch("lambda_py2_track", &lambda_py2_track);
-  tree_->Branch("lambda_pz2_track", &lambda_pz2_track);
   tree_->Branch("lambda_charge2", &lambda_charge2);
 
   tree_->Branch("J_pt1", &J_pt1);
@@ -1162,9 +1219,27 @@ void Psi2SLambda::beginJob()
   tree_->Branch("J_pz2", &J_pz2);
   tree_->Branch("J_charge2", &J_charge2);
 
+  tree_->Branch("pi1_pt", &pi1_pt);
+  tree_->Branch("pi1_px", &pi1_px);
+  tree_->Branch("pi1_py", &pi1_py);
+  tree_->Branch("pi1_pz", &pi1_pz);
+  tree_->Branch("pi1_charge", &pi1_charge);
+  tree_->Branch("pi2_pt", &pi2_pt);
+  tree_->Branch("pi2_px", &pi2_px);
+  tree_->Branch("pi2_py", &pi2_py);
+  tree_->Branch("pi2_pz", &pi2_pz);
+  tree_->Branch("pi2_charge", &pi2_charge);
+
   tree_->Branch("flightLen", &flightLen);
   tree_->Branch("flightLenErr", &flightLenErr);
   tree_->Branch("flightLenSig", &flightLenSig);
+
+  tree_->Branch("d0ValPi1", &d0ValPi1);
+  tree_->Branch("d0ErrPi1", &d0ErrPi1);
+  tree_->Branch("d0SigPi1", &d0SigPi1);
+  tree_->Branch("d0ValPi2", &d0ValPi2);
+  tree_->Branch("d0ErrPi2", &d0ErrPi2);
+  tree_->Branch("d0SigPi2", &d0SigPi2);
 
   tree_->Branch("lB_chi2", &lB_chi2);
   tree_->Branch("lambda_chi2", &lambda_chi2);
@@ -1192,12 +1267,12 @@ void Psi2SLambda::beginJob()
   tree_->Branch("indexVtx", &indexVtx);
   tree_->Branch("nTracksFromPV", &nTracksFromPV);
 
-  tree_->Branch("vRefMuP", &vRefMuP);
-  tree_->Branch("vRefMuM", &vRefMuM);
   tree_->Branch("vRefPi1", &vRefPi1);
   tree_->Branch("vRefPi2", &vRefPi2);
   tree_->Branch("vRefDau1", &vRefDau1);
   tree_->Branch("vRefDau2", &vRefDau2);
+  tree_->Branch("trigMatchPi1", &trigMatchPi1);
+  tree_->Branch("trigMatchPi2", &trigMatchPi2);
 
   tree_->Branch("nVtx",       &nVtx);
   tree_->Branch("run",        &run,       "run/I");
@@ -1224,15 +1299,15 @@ void Psi2SLambda::beginJob()
   tree_->Branch("VDecayVtxXZE",&VDecayVtxXZE);
   tree_->Branch("VDecayVtxYZE",&VDecayVtxYZE);
 
-  tree_->Branch("pi1dxy",&pi1dxy);
-  tree_->Branch("pi2dxy",&pi2dxy);
-  tree_->Branch("pi1dz",&pi1dz);
-  tree_->Branch("pi2dz",&pi2dz);
+  tree_->Branch("dau1dxy",&dau1dxy);
+  tree_->Branch("dau2dxy",&dau2dxy);
+  tree_->Branch("dau1dz",&dau1dz);
+  tree_->Branch("dau2dz",&dau2dz);
 
-  tree_->Branch("pi1dxy_e",&pi1dxy_e);
-  tree_->Branch("pi2dxy_e",&pi2dxy_e);
-  tree_->Branch("pi1dz_e",&pi1dz_e);
-  tree_->Branch("pi2dz_e",&pi2dz_e);
+  tree_->Branch("dau1dxy_e",&dau1dxy_e);
+  tree_->Branch("dau2dxy_e",&dau2dxy_e);
+  tree_->Branch("dau1dz_e",&dau1dz_e);
+  tree_->Branch("dau2dz_e",&dau2dz_e);
 
   tree_->Branch("mumC2",&mumC2);  
   tree_->Branch("mumNHits",&mumNHits);
@@ -1244,10 +1319,6 @@ void Psi2SLambda::beginJob()
   tree_->Branch("mupdxy",&mupdxy);
   tree_->Branch("muon_dca",&muon_dca);
 
-  tree_->Branch("tri_Dim25",&tri_Dim25);
-  tree_->Branch("tri_JpsiTk",&tri_JpsiTk);
-  tree_->Branch("tri_JpsiTkTk",&tri_JpsiTkTk); 
- 
   tree_->Branch("mumdz",&mumdz);
   tree_->Branch("mupdz",&mupdz);
   tree_->Branch("mu1soft",&mu1soft);
@@ -1259,8 +1330,8 @@ void Psi2SLambda::beginJob()
   tree_->Branch("mu1loose",&mu1loose);
   tree_->Branch("mu2loose",&mu2loose);
 
-  treeTest_->Branch("Jtest_mass",&Jtest_mass);
-  treeTest_->Branch("Jtest_prob",&Jtest_prob);
+//  treeTest_->Branch("Jtest_mass",&Jtest_mass);
+//  treeTest_->Branch("Jtest_prob",&Jtest_prob);
 
 }
 
@@ -1270,8 +1341,8 @@ void Psi2SLambda::endJob() {
   tree_->GetDirectory()->cd();
   tree_->Write();
 
-  treeTest_->GetDirectory()->cd();
-  treeTest_->Write();
+//  treeTest_->GetDirectory()->cd();
+//  treeTest_->Write();
 
 }
 

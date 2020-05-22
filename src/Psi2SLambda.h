@@ -79,6 +79,9 @@ public:
   bool IsTheSame2(const pat::PackedCandidate& tk, const pat::PackedCandidate& tk2); 
   Double_t Distance(const Double_t p1[], const Double_t p2[]);
   Double_t DistanceError(const Double_t p1[], const Double_t err1[], const Double_t p2[], const Double_t err2[]);
+  float DeltaR(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2);
+  float DeltaPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2);
+  bool MatchByDRDPt(const pat::PackedCandidate t1, const pat::TriggerObjectStandAlone t2);
 
 private:
   virtual void beginJob() ;
@@ -104,7 +107,7 @@ private:
   bool doMC_;
 
   TTree      *tree_; 
-  TTree      *treeTest_;
+//  TTree      *treeTest_;
 
   int mupCategory;
   int mumCategory;
@@ -117,8 +120,6 @@ private:
   std::vector<int>         *mupNHits, *mupNPHits;
   std::vector<float>       *mumdxy, *mupdxy, *mumdz, *mupdz;
   std::vector<float>       *muon_dca;
-
-  std::vector<int>         *tri_Dim25, *tri_JpsiTk, *tri_JpsiTkTk;
  
   std::vector<bool>        *mu1soft, *mu2soft, *mu1tight, *mu2tight;  
   std::vector<bool>        *mu1PF, *mu2PF, *mu1loose, *mu2loose;  
@@ -131,9 +132,8 @@ private:
   std::vector<float>       *priVtxXYE, *priVtxXZE, *priVtxYZE;
  
   std::vector<int>         *indexVtx, *nTracksFromPV;
-
-  std::vector<int>         *vRefMuP, *vRefMuM, *vRefPi1, *vRefPi2, *vRefDau1, *vRefDau2;
-  // ********************************** ************************************************************************
+  std::vector<int>         *vRefPi1, *vRefPi2, *vRefDau1, *vRefDau2;
+  std::vector<bool>        *trigMatchPi1, *trigMatchPi2;
 
   std::vector<float>       *lBDecayVtxX, *lBDecayVtxY, *lBDecayVtxZ;
   std::vector<double>      *lBDecayVtxXE, *lBDecayVtxYE, *lBDecayVtxZE;
@@ -147,7 +147,7 @@ private:
 
   unsigned int             nlB;
   unsigned int             nMu;
-  unsigned int             nJpsi; 
+//  unsigned int             nJpsi; 
   unsigned int             nPsi2S;
 
   std::vector<float>       *lB_mass, *lB_px, *lB_py, *lB_pz;
@@ -159,13 +159,13 @@ private:
   std::vector<float>       *lambda_mass, *lambda_px, *lambda_py, *lambda_pz;
   std::vector<float>       *lambda_pt1, *lambda_px1, *lambda_py1, *lambda_pz1;
   std::vector<float>       *lambda_pt2, *lambda_px2, *lambda_py2, *lambda_pz2;
-  
-  std::vector<float>       *lambda_px1_track, *lambda_py1_track, *lambda_pz1_track;
-  std::vector<float>       *lambda_px2_track, *lambda_py2_track, *lambda_pz2_track;
+  std::vector<float>       *lambda_charge1, *lambda_charge2;  
 
-  std::vector<float>       *pi1dxy, *pi2dxy, *pi1dz, *pi2dz;
-  std::vector<float>       *pi1dxy_e, *pi2dxy_e, *pi1dz_e, *pi2dz_e;
-  std::vector<int>         *lambda_charge1, *lambda_charge2;
+  std::vector<float>       *pi1_pt, *pi1_px, *pi1_py, *pi1_pz, *pi1_charge;
+  std::vector<float>       *pi2_pt, *pi2_px, *pi2_py, *pi2_pz, *pi2_charge;
+
+  std::vector<float>       *dau1dxy, *dau2dxy, *dau1dz, *dau2dz;
+  std::vector<float>       *dau1dxy_e, *dau2dxy_e, *dau1dz_e, *dau2dz_e;
   
   std::vector<float>       *J_mass, *J_px, *J_py, *J_pz;
   std::vector<float>       *J_pt1, *J_px1, *J_py1, *J_pz1;
@@ -174,7 +174,10 @@ private:
   
   std::vector<float>       *flightLen, *flightLenErr, *flightLenSig;
 
-  std::vector<float>       *Jtest_mass, *Jtest_prob;
+  std::vector<float>       *d0ValPi1, *d0ErrPi1, *d0SigPi1;
+  std::vector<float>       *d0ValPi2, *d0ErrPi2, *d0SigPi2; 
+
+//  std::vector<float>       *Jtest_mass, *Jtest_prob;
 
   std::vector<float>       *lambda_chi2, *J_chi2, *psi2S_chi2, *lB_chi2;
   std::vector<float>       *lB_Prob, *J_Prob, *lambda_Prob, *psi2S_Prob;

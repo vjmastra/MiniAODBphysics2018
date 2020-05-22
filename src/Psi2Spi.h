@@ -104,7 +104,8 @@ private:
   bool OnlyGen_;
   bool doMC_;
 
-  TTree      *tree_, *treeTest_;
+  TTree      *tree_;
+//  TTree      *treeTest_;
   int mupCategory;
   int mumCategory;
   int mupME1Clean;
@@ -117,23 +118,18 @@ private:
   std::vector<float>       *mumdxy, *mupdxy, *mumdz, *mupdz;
   std::vector<float>       *muon_dca;
 
-  std::vector<int>         *tri_Dim25, *tri_JpsiTk, *tri_JpsiTkTk;
- 
   std::vector<bool>        *mu1soft, *mu2soft, *mu1tight, *mu2tight;  
   std::vector<bool>        *mu1PF, *mu2PF, *mu1loose, *mu2loose;  
  
   int                      muAcc, muTrig, weight;
  
-  // vertice primario CON mayor Pt
   unsigned int             nVtx;
   std::vector<float>       *priVtxX, *priVtxY, *priVtxZ, *priVtxXE, *priVtxYE, *priVtxZE, *priVtxCL;
   std::vector<float>       *priVtxXYE, *priVtxXZE, *priVtxYZE;
 
   std::vector<int>         *indexVtx, *nTracksFromPV;
-
-  std::vector<int>         *vRefMuP, *vRefMuM, *vRefPi1, *vRefPi2, *vRefPi3;
- 
-  // ********************************** ************************************************************************
+  std::vector<int>         *vRefPi1, *vRefPi2, *vRefPi3;
+  std::vector<bool>        *trigMatchPi1, *trigMatchPi2, *trigMatchPi3; 
 
   std::vector<float>       *BDecayVtxX, *BDecayVtxY, *BDecayVtxZ;
   std::vector<double>      *BDecayVtxXE, *BDecayVtxYE, *BDecayVtxZE;
@@ -145,7 +141,7 @@ private:
   unsigned int             nMu;
   unsigned int             nJpsi;
   unsigned int             nPsi2S;
-  unsigned int             nJpsi_test;
+//  unsigned int             nJpsi_test;
 
   std::vector<float>       *B_mass, *B_px, *B_py, *B_pz;
 
@@ -153,12 +149,13 @@ private:
   std::vector<float>       *deltaR1, *deltaR2;
   std::vector<float>       *pointingAngle;
 
-  std::vector<float>       *pi1_px, *pi1_py, *pi1_pz,  *pi1_charge;
-  std::vector<float>       *pi1_px_track, *pi1_py_track, *pi1_pz_track;
-  std::vector<float>       *pi2_px, *pi2_py, *pi2_pz,  *pi2_charge;
-  std::vector<float>       *pi2_px_track, *pi2_py_track, *pi2_pz_track;
-  std::vector<float>       *pi3_px, *pi3_py, *pi3_pz,  *pi3_charge;
-  std::vector<float>       *pi3_px_track, *pi3_py_track, *pi3_pz_track;
+  std::vector<float>       *pi1_pt, *pi1_px, *pi1_py, *pi1_pz,  *pi1_charge;
+  std::vector<float>       *pi2_pt, *pi2_px, *pi2_py, *pi2_pz,  *pi2_charge;
+  std::vector<float>       *pi3_pt, *pi3_px, *pi3_py, *pi3_pz,  *pi3_charge;
+
+  std::vector<float>       *d0ValPi1, *d0ErrPi1, *d0SigPi1;
+  std::vector<float>       *d0ValPi2, *d0ErrPi2, *d0SigPi2;
+  std::vector<float>       *d0ValPi3, *d0ErrPi3, *d0SigPi3;
 
   std::vector<float>       *J_mass, *J_px, *J_py, *J_pz;
   std::vector<float>       *J_pt1, *J_px1, *J_py1, *J_pz1;

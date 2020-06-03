@@ -128,8 +128,8 @@ private:
   std::vector<float>       *priVtxXYE, *priVtxXZE, *priVtxYZE;
 
   std::vector<int>         *indexVtx, *nTracksFromPV;
-  std::vector<int>         *vRefPi1, *vRefPi2, *vRefPi3;
-  std::vector<bool>        *trigMatchPi1, *trigMatchPi2, *trigMatchPi3; 
+  std::vector<int>         *vRefPiP, *vRefPiM, *vRefPiBach;
+  std::vector<bool>        *trigMatchPiP, *trigMatchPiM, *trigMatchPiBach, *trigMatchPions; 
 
   std::vector<float>       *BDecayVtxX, *BDecayVtxY, *BDecayVtxZ;
   std::vector<double>      *BDecayVtxXE, *BDecayVtxYE, *BDecayVtxZE;
@@ -149,13 +149,13 @@ private:
   std::vector<float>       *deltaR1, *deltaR2;
   std::vector<float>       *pointingAngle;
 
-  std::vector<float>       *pi1_pt, *pi1_px, *pi1_py, *pi1_pz,  *pi1_charge;
-  std::vector<float>       *pi2_pt, *pi2_px, *pi2_py, *pi2_pz,  *pi2_charge;
-  std::vector<float>       *pi3_pt, *pi3_px, *pi3_py, *pi3_pz,  *pi3_charge;
+  std::vector<float>       *piP_pt, *piP_px, *piP_py, *piP_pz,  *piP_charge;
+  std::vector<float>       *piM_pt, *piM_px, *piM_py, *piM_pz,  *piM_charge;
+  std::vector<float>       *piBach_pt, *piBach_px, *piBach_py, *piBach_pz,  *piBach_charge;
 
-  std::vector<float>       *d0ValPi1, *d0ErrPi1, *d0SigPi1;
-  std::vector<float>       *d0ValPi2, *d0ErrPi2, *d0SigPi2;
-  std::vector<float>       *d0ValPi3, *d0ErrPi3, *d0SigPi3;
+  std::vector<float>       *d0ValPiP, *d0ErrPiP, *d0SigPiP;
+  std::vector<float>       *d0ValPiM, *d0ErrPiM, *d0SigPiM;
+  std::vector<float>       *d0ValPiBach, *d0ErrPiBach, *d0SigPiBach;
 
   std::vector<float>       *J_mass, *J_px, *J_py, *J_pz, *deltaRmumu;
   std::vector<float>       *J_pt1, *J_px1, *J_py1, *J_pz1;

@@ -115,8 +115,8 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   priVtxXYE(0), priVtxXZE(0), priVtxYZE(0),
 
   indexVtx(0), nTracksFromPV(0),
-  vRefPi1(0), vRefPi2(0), vRefPi3(0),
-  trigMatchPi1(0), trigMatchPi2(0), trigMatchPi3(0), 
+  vRefPiP(0), vRefPiM(0), vRefPiBach(0),
+  trigMatchPiP(0), trigMatchPiM(0), trigMatchPiBach(0), trigMatchPions(0),
 
   BDecayVtxX(0), BDecayVtxY(0), BDecayVtxZ(0), BDecayVtxXE(0), BDecayVtxYE(0), BDecayVtxZE(0),
   BDecayVtxXYE(0), BDecayVtxXZE(0), BDecayVtxYZE(0),
@@ -129,13 +129,13 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   piPi_mass(0), psiPiPi_mass(0),
   deltaR1(0), deltaR2(0), pointingAngle(0),
 
-  pi1_pt(0), pi1_px(0), pi1_py(0), pi1_pz(0), pi1_charge(0),
-  pi2_pt(0), pi2_px(0), pi2_py(0), pi2_pz(0), pi2_charge(0),
-  pi3_pt(0), pi3_px(0), pi3_py(0), pi3_pz(0), pi3_charge(0),
+  piP_pt(0), piP_px(0), piP_py(0), piP_pz(0), piP_charge(0),
+  piM_pt(0), piM_px(0), piM_py(0), piM_pz(0), piM_charge(0),
+  piBach_pt(0), piBach_px(0), piBach_py(0), piBach_pz(0), piBach_charge(0),
 
-  d0ValPi1(0), d0ErrPi1(0), d0SigPi1(0),
-  d0ValPi2(0), d0ErrPi2(0), d0SigPi2(0),
-  d0ValPi3(0), d0ErrPi3(0), d0SigPi3(0), 
+  d0ValPiP(0), d0ErrPiP(0), d0SigPiP(0),
+  d0ValPiM(0), d0ErrPiM(0), d0SigPiM(0),
+  d0ValPiBach(0), d0ErrPiBach(0), d0SigPiBach(0), 
 
   J_mass(0), J_px(0), J_py(0), J_pz(0), deltaRmumu(0),
   J_pt1(0), J_px1(0), J_py1(0), J_pz1(0), 
@@ -481,6 +481,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           if (IsTheSame(*iTrack1,*iMuon1) || IsTheSame(*iTrack1,*iMuon2)) continue;
           if (IsTheSame(*iTrack2,*iMuon1) || IsTheSame(*iTrack2,*iMuon2)) continue;
 
+          bool trackOneIsPlus = (iTrack1->charge()==1) ? 1 : 0;
+
           reco::TransientTrack pion1TT((*theB).build(iTrack1->pseudoTrack()));
           reco::TransientTrack pion2TT((*theB).build(iTrack2->pseudoTrack())); 
 
@@ -718,6 +720,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             bool triggerFlagPion1_tmp = (objMatchedForTrack1_tmp > 0 && d0SigTrack1_tmp > 2.0 && ptTrack1_tmp > 1.2);
             bool triggerFlagPion2_tmp = (objMatchedForTrack2_tmp > 0 && d0SigTrack2_tmp > 2.0 && ptTrack2_tmp > 1.2);
             bool triggerFlagPion3_tmp = (objMatchedForTrack3_tmp > 0 && d0SigTrack3_tmp > 2.0 && ptTrack3_tmp > 1.2);
+            bool triggerFlagPions_tmp = (triggerFlagPion1_tmp || triggerFlagPion2_tmp || triggerFlagPion3_tmp);
 
             // get children from final B fit
 	    BVertexFitTree->movePointerToTheFirstChild();
@@ -745,13 +748,22 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             KinematicParameters psiPi2KP = pi2CandMC->currentState().kinematicParameters();
             KinematicParameters psiPipKP;
             KinematicParameters psiPimKP;
+            int piPcharge_tmp, piMcharge_tmp, piBcharge_tmp;
 
-            if ( pi1CandMC->currentState().particleCharge() > 0 ) psiPipKP = psiPi1KP;
-            if ( pi1CandMC->currentState().particleCharge() < 0 ) psiPimKP = psiPi1KP;
-            if ( pi2CandMC->currentState().particleCharge() > 0 ) psiPipKP = psiPi2KP;
-            if ( pi2CandMC->currentState().particleCharge() < 0 ) psiPimKP = psiPi2KP;
+            if ( trackOneIsPlus ) { 
+              psiPipKP = psiPi1KP; 
+              piPcharge_tmp = pi1CandMC->currentState().particleCharge();
+              psiPimKP = psiPi2KP; 
+              piMcharge_tmp = pi2CandMC->currentState().particleCharge();
+            } else {
+                psiPipKP = psiPi2KP;
+                piPcharge_tmp = pi2CandMC->currentState().particleCharge();
+                psiPimKP = psiPi1KP;
+                piMcharge_tmp = pi1CandMC->currentState().particleCharge();
+              }
 
-            KinematicParameters pi3KP = pi3CandMC->currentState().kinematicParameters();
+            KinematicParameters piBachKP = pi3CandMC->currentState().kinematicParameters();
+            piBcharge_tmp = pi3CandMC->currentState().particleCharge(); 
 
  	    GlobalVector Jp1vec(mu1CandMC->currentState().globalMomentum().x(),
 	    			mu1CandMC->currentState().globalMomentum().y(),
@@ -809,35 +821,35 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    J_pz2->push_back(psiMu2KP.momentum().z());
 	    J_charge2->push_back(mu2CandMC->currentState().particleCharge());
 
-            pi1_pt->push_back(ptTrack1_tmp);
-            pi1_px->push_back(psiPi1KP.momentum().x());
-            pi1_py->push_back(psiPi1KP.momentum().y());
-            pi1_pz->push_back(psiPi1KP.momentum().z());
-            pi1_charge->push_back(pi1CandMC->currentState().particleCharge());
+            piP_pt->push_back(trackOneIsPlus ? ptTrack1_tmp : ptTrack2_tmp);
+            piP_px->push_back(psiPipKP.momentum().x());
+            piP_py->push_back(psiPipKP.momentum().y());
+            piP_pz->push_back(psiPipKP.momentum().z());
+            piP_charge->push_back(piPcharge_tmp);
 
-            pi2_pt->push_back(ptTrack2_tmp);
-            pi2_px->push_back(psiPi2KP.momentum().x());
-            pi2_py->push_back(psiPi2KP.momentum().y());
-            pi2_pz->push_back(psiPi2KP.momentum().z());
-            pi2_charge->push_back(pi2CandMC->currentState().particleCharge());
+            piM_pt->push_back(trackOneIsPlus ? ptTrack2_tmp : ptTrack1_tmp);
+            piM_px->push_back(psiPimKP.momentum().x());
+            piM_py->push_back(psiPimKP.momentum().y());
+            piM_pz->push_back(psiPimKP.momentum().z());
+            piM_charge->push_back(piMcharge_tmp);
 
-            pi3_pt->push_back(ptTrack3_tmp);
-            pi3_px->push_back(pi3KP.momentum().x());
-            pi3_py->push_back(pi3KP.momentum().y());
-            pi3_pz->push_back(pi3KP.momentum().z());
-            pi3_charge->push_back(pi3CandMC->currentState().particleCharge());
+            piBach_pt->push_back(ptTrack3_tmp);
+            piBach_px->push_back(piBachKP.momentum().x());
+            piBach_py->push_back(piBachKP.momentum().y());
+            piBach_pz->push_back(piBachKP.momentum().z());
+            piBach_charge->push_back(piBcharge_tmp);
 
-            d0ValPi1->push_back(d0Track1_tmp);
-            d0ErrPi1->push_back(d0ErrTrack1_tmp);
-            d0SigPi1->push_back(d0SigTrack1_tmp);
+            d0ValPiP->push_back(trackOneIsPlus ? d0Track1_tmp : d0Track2_tmp);
+            d0ErrPiP->push_back(trackOneIsPlus ? d0ErrTrack1_tmp : d0ErrTrack2_tmp);
+            d0SigPiP->push_back(trackOneIsPlus ? d0SigTrack1_tmp : d0SigTrack2_tmp);
       
-            d0ValPi2->push_back(d0Track2_tmp);
-            d0ErrPi2->push_back(d0ErrTrack2_tmp);
-            d0SigPi2->push_back(d0SigTrack2_tmp);
+            d0ValPiM->push_back(trackOneIsPlus ? d0Track2_tmp : d0Track1_tmp);
+            d0ErrPiM->push_back(trackOneIsPlus ? d0ErrTrack2_tmp : d0ErrTrack1_tmp);
+            d0SigPiM->push_back(trackOneIsPlus ? d0SigTrack2_tmp : d0SigTrack1_tmp);
   
-            d0ValPi3->push_back(d0Track3_tmp);
-            d0ErrPi3->push_back(d0ErrTrack3_tmp);
-            d0SigPi3->push_back(d0SigTrack3_tmp);
+            d0ValPiBach->push_back(d0Track3_tmp);
+            d0ErrPiBach->push_back(d0ErrTrack3_tmp);
+            d0SigPiBach->push_back(d0SigTrack3_tmp);
 
 	    J_chi2->push_back(J_vFit_vertex_noMC->chiSquared());
             psi2S_chi2->push_back( psi2SDecayVertexMC->chiSquared());
@@ -861,13 +873,14 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             indexVtx->push_back(indexVtx_tmp);
             nTracksFromPV->push_back(nTracksFromPV_tmp);
 
-            vRefPi1->push_back(vertexRefPi1_tmp);
-            vRefPi2->push_back(vertexRefPi2_tmp);
-            vRefPi3->push_back(vertexRefPi3_tmp);
+            vRefPiP->push_back(trackOneIsPlus ? vertexRefPi1_tmp : vertexRefPi2_tmp);
+            vRefPiM->push_back(trackOneIsPlus ? vertexRefPi2_tmp : vertexRefPi1_tmp);
+            vRefPiBach->push_back(vertexRefPi3_tmp);
 
-            trigMatchPi1->push_back(triggerFlagPion1_tmp);
-            trigMatchPi2->push_back(triggerFlagPion2_tmp);
-            trigMatchPi3->push_back(triggerFlagPion3_tmp);
+            trigMatchPions->push_back(triggerFlagPions_tmp);
+            trigMatchPiP->push_back(trackOneIsPlus ? triggerFlagPion1_tmp : triggerFlagPion2_tmp);
+            trigMatchPiM->push_back(trackOneIsPlus ? triggerFlagPion2_tmp : triggerFlagPion1_tmp);
+            trigMatchPiBach->push_back(triggerFlagPion3_tmp);
 
             flightLen->push_back(flightLen_tmp);
             flightLenErr->push_back(flightLenErr_tmp);
@@ -942,13 +955,13 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    J_pt1->clear();  J_px1->clear();  J_py1->clear();  J_pz1->clear(), J_charge1->clear();
    J_pt2->clear();  J_px2->clear();  J_py2->clear();  J_pz2->clear(), J_charge2->clear();
 
-   pi1_pt->clear(); pi1_px->clear(); pi1_py->clear(); pi1_pz->clear(); pi1_charge->clear();
-   pi2_pt->clear(); pi2_px->clear(); pi2_py->clear(); pi2_pz->clear(); pi2_charge->clear();
-   pi3_pt->clear(); pi3_px->clear(); pi3_py->clear(); pi3_pz->clear(); pi3_charge->clear();
+   piP_pt->clear(); piP_px->clear(); piP_py->clear(); piP_pz->clear(); piP_charge->clear();
+   piM_pt->clear(); piM_px->clear(); piM_py->clear(); piM_pz->clear(); piM_charge->clear();
+   piBach_pt->clear(); piBach_px->clear(); piBach_py->clear(); piBach_pz->clear(); piBach_charge->clear();
 
-   d0ValPi1->clear(); d0ErrPi1->clear(); d0SigPi1->clear();
-   d0ValPi2->clear(); d0ErrPi2->clear(); d0SigPi2->clear();
-   d0ValPi3->clear(); d0ErrPi3->clear(); d0SigPi3->clear();
+   d0ValPiP->clear(); d0ErrPiP->clear(); d0SigPiP->clear();
+   d0ValPiM->clear(); d0ErrPiM->clear(); d0SigPiM->clear();
+   d0ValPiBach->clear(); d0ErrPiBach->clear(); d0SigPiBach->clear();
 
    J_chi2->clear(); psi2S_chi2->clear(); B_chi2->clear();
    B_Prob->clear(); J_Prob->clear(); psi2S_Prob->clear();
@@ -970,8 +983,8 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    indexVtx->clear(); nTracksFromPV->clear();
 
-   vRefPi1->clear(); vRefPi2->clear(); vRefPi3->clear();
-   trigMatchPi1->clear(); trigMatchPi2->clear(); trigMatchPi3->clear();
+   vRefPiP->clear(); vRefPiM->clear(); vRefPiBach->clear();
+   trigMatchPiP->clear(); trigMatchPiM->clear(); trigMatchPiBach->clear(); trigMatchPions->clear();
 
    flightLen->clear(); flightLenErr->clear(); flightLenSig->clear();
 
@@ -1114,31 +1127,31 @@ void Psi2Spi::beginJob()
   tree_->Branch("J_pz2", &J_pz2);
   tree_->Branch("J_charge2", &J_charge2);
 
-  tree_->Branch("pi1_pt", &pi1_pt);
-  tree_->Branch("pi1_px", &pi1_px);
-  tree_->Branch("pi1_py", &pi1_py);
-  tree_->Branch("pi1_pz", &pi1_pz);
-  tree_->Branch("pi1_charge", &pi1_charge);
-  tree_->Branch("pi2_pt", &pi2_pt);
-  tree_->Branch("pi2_px", &pi2_px);
-  tree_->Branch("pi2_py", &pi2_py);
-  tree_->Branch("pi2_pz", &pi2_pz);
-  tree_->Branch("pi2_charge", &pi2_charge);
-  tree_->Branch("pi3_pt", &pi3_pt);
-  tree_->Branch("pi3_px", &pi3_px);
-  tree_->Branch("pi3_py", &pi3_py);
-  tree_->Branch("pi3_pz", &pi3_pz);
-  tree_->Branch("pi3_charge", &pi3_charge);
+  tree_->Branch("piP_pt", &piP_pt);
+  tree_->Branch("piP_px", &piP_px);
+  tree_->Branch("piP_py", &piP_py);
+  tree_->Branch("piP_pz", &piP_pz);
+  tree_->Branch("piP_charge", &piP_charge);
+  tree_->Branch("piM_pt", &piM_pt);
+  tree_->Branch("piM_px", &piM_px);
+  tree_->Branch("piM_py", &piM_py);
+  tree_->Branch("piM_pz", &piM_pz);
+  tree_->Branch("piM_charge", &piM_charge);
+  tree_->Branch("piBach_pt", &piBach_pt);
+  tree_->Branch("piBach_px", &piBach_px);
+  tree_->Branch("piBach_py", &piBach_py);
+  tree_->Branch("piBach_pz", &piBach_pz);
+  tree_->Branch("piBach_charge", &piBach_charge);
 
-  tree_->Branch("d0ValPi1", &d0ValPi1);
-  tree_->Branch("d0ErrPi1", &d0ErrPi1);
-  tree_->Branch("d0SigPi1", &d0SigPi1);
-  tree_->Branch("d0ValPi2", &d0ValPi2);
-  tree_->Branch("d0ErrPi2", &d0ErrPi2);
-  tree_->Branch("d0SigPi2", &d0SigPi2);
-  tree_->Branch("d0ValPi3", &d0ValPi3);
-  tree_->Branch("d0ErrPi3", &d0ErrPi3);
-  tree_->Branch("d0SigPi3", &d0SigPi3);
+  tree_->Branch("d0ValPiP", &d0ValPiP);
+  tree_->Branch("d0ErrPiP", &d0ErrPiP);
+  tree_->Branch("d0SigPiP", &d0SigPiP);
+  tree_->Branch("d0ValPiM", &d0ValPiM);
+  tree_->Branch("d0ErrPiM", &d0ErrPiM);
+  tree_->Branch("d0SigPiM", &d0SigPiM);
+  tree_->Branch("d0ValPiBach", &d0ValPiBach);
+  tree_->Branch("d0ErrPiBach", &d0ErrPiBach);
+  tree_->Branch("d0SigPiBach", &d0SigPiBach);
 
   tree_->Branch("B_chi2", &B_chi2);
   tree_->Branch("J_chi2", &J_chi2);
@@ -1164,13 +1177,14 @@ void Psi2Spi::beginJob()
   tree_->Branch("indexVtx", &indexVtx);
   tree_->Branch("nTracksFromPV", &nTracksFromPV);
 
-  tree_->Branch("vRefPi1", &vRefPi1);
-  tree_->Branch("vRefPi2", &vRefPi2);
-  tree_->Branch("vRefPi3", &vRefPi3);
+  tree_->Branch("vRefPiP", &vRefPiP);
+  tree_->Branch("vRefPiM", &vRefPiM);
+  tree_->Branch("vRefPiBach", &vRefPiBach);
 
-  tree_->Branch("trigMatchPi1", &trigMatchPi1);
-  tree_->Branch("trigMatchPi2", &trigMatchPi2);
-  tree_->Branch("trigMatchPi3", &trigMatchPi3);
+  tree_->Branch("trigMatchPions", &trigMatchPions);
+  tree_->Branch("trigMatchPiP", &trigMatchPiP);
+  tree_->Branch("trigMatchPiM", &trigMatchPiM);
+  tree_->Branch("trigMatchPiBach", &trigMatchPiBach);
 
   tree_->Branch("nVtx",       &nVtx);
   tree_->Branch("run",        &run,       "run/I");

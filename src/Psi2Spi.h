@@ -157,7 +157,7 @@ private:
   std::vector<float>       *d0ValPi2, *d0ErrPi2, *d0SigPi2;
   std::vector<float>       *d0ValPi3, *d0ErrPi3, *d0SigPi3;
 
-  std::vector<float>       *J_mass, *J_px, *J_py, *J_pz;
+  std::vector<float>       *J_mass, *J_px, *J_py, *J_pz, *deltaRmumu;
   std::vector<float>       *J_pt1, *J_px1, *J_py1, *J_pz1;
   std::vector<float>       *J_pt2, *J_px2, *J_py2, *J_pz2;
   std::vector<int>         *J_charge1, *J_charge2;

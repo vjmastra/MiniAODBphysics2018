@@ -137,20 +137,20 @@ Psi2Spi::Psi2Spi(const edm::ParameterSet& iConfig)
   d0ValPi2(0), d0ErrPi2(0), d0SigPi2(0),
   d0ValPi3(0), d0ErrPi3(0), d0SigPi3(0), 
 
-  J_mass(0), J_px(0), J_py(0), J_pz(0),
+  J_mass(0), J_px(0), J_py(0), J_pz(0), deltaRmumu(0),
   J_pt1(0), J_px1(0), J_py1(0), J_pz1(0), 
   J_pt2(0), J_px2(0), J_py2(0), J_pz2(0), 
   J_charge1(0), J_charge2(0),
 
   flightLen(0), flightLenErr(0), flightLenSig(0),
-/*  
-  mu1_px_test(0), mu1_py_test(0), mu1_pz_test(0), mu1_charge_test(0),
-  mu2_px_test(0), mu2_py_test(0), mu2_pz_test(0), mu2_charge_test(0),
-  Jpsi_dca_test(0),
-  Jpsi_vx_test(0), Jpsi_vy_test(0), Jpsi_vz_test(0),
+  
+//  mu1_px_test(0), mu1_py_test(0), mu1_pz_test(0), mu1_charge_test(0),
+//  mu2_px_test(0), mu2_py_test(0), mu2_pz_test(0), mu2_charge_test(0),
+//  Jpsi_dca_test(0),
+//  Jpsi_vx_test(0), Jpsi_vy_test(0), Jpsi_vz_test(0),
 
-  Jpsi_mass_test(0), Jpsi_prob_test(0), Jpsi_chi2_test(0),
-*/
+//  Jpsi_mass_test(0), Jpsi_prob_test(0), Jpsi_chi2_test(0),
+
   J_chi2(0), psi2S_chi2(0), B_chi2(0),
   B_Prob(0), J_Prob(0), psi2S_Prob(0),
 
@@ -197,23 +197,23 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
   const pat::TriggerObjectStandAloneCollection unPackedCollection;
-/*
-  for (unsigned int i = 0; i  < triggerBits->size(); i++) {
-    if (triggerBits->accept(i))
-      std::cout << "Trigger " << names.triggerName(i) <<  "\n";
-  }
-  cout << endl;
-*/
+
+//  for (unsigned int i = 0; i  < triggerBits->size(); i++) {
+//    if (triggerBits->accept(i))
+//      std::cout << "Trigger " << names.triggerName(i) <<  "\n";
+//  }
+//  cout << endl;
+
  for (pat::TriggerObjectStandAlone trig : *triggerCollection) {
       trig.unpackPathNames(names);
       trig.unpackFilterLabels(iEvent, *triggerBits);  
-/*
-      std::cout << "\tTrigger object:  pt " << trig.pt() << ", eta " << trig.eta() << ", phi " << trig.phi() << std::endl;
-      std::cout << "\t   Collection: " << trig.collection() << std::endl;
-      std::cout << "\t   Type IDs:   ";
-      for (unsigned h = 0; h < trig.filterIds().size(); ++h) std::cout << " " << trig.filterIds()[h] ;
-      std::cout << std::endl;
-*/
+
+//      std::cout << "\tTrigger object:  pt " << trig.pt() << ", eta " << trig.eta() << ", phi " << trig.phi() << std::endl;
+//      std::cout << "\t   Collection: " << trig.collection() << std::endl;
+//      std::cout << "\t   Type IDs:   ";
+//      for (unsigned h = 0; h < trig.filterIds().size(); ++h) std::cout << " " << trig.filterIds()[h] ;
+//      std::cout << std::endl;
+
   }
 
   // *********************************
@@ -363,9 +363,11 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if(iMuon1->track()->pt()<4.0) continue;
 
     for(View<pat::Muon>::const_iterator iMuon2 = iMuon1+1; iMuon2 != thePATMuonHandle->end(); ++iMuon2) {  
-      
+
+      if((iMuon2->track()).isNull()) continue;      
       if(iMuon1==iMuon2) continue;
       if( (iMuon1->charge())*(iMuon2->charge()) == 1) continue;
+      if(iMuon2->track()->pt()<4.0) continue;
 
       TrackRef glbTrackP;	  
       TrackRef glbTrackM;	  
@@ -375,13 +377,6 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   
       if(iMuon2->charge() == 1) {glbTrackP = iMuon2->track();}
       if(iMuon2->charge() == -1){glbTrackM = iMuon2->track();}
-	  
-      if( glbTrackP.isNull() || glbTrackM.isNull() ) {
-        //std::cout << "continue due to no track ref" << endl;
-        continue;
-      }
-
-      if(iMuon2->track()->pt()<4.0) continue;
 
       if(!(glbTrackM->quality(reco::TrackBase::highPurity))) continue;
       if(!(glbTrackP->quality(reco::TrackBase::highPurity))) continue;
@@ -458,10 +453,14 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(J_Prob_tmp<0.01) {
         continue;
       }
-	  
-      //some loose cuts go here
 
       if(J_vFit_noMC->currentState().mass()<2.95 || J_vFit_noMC->currentState().mass()>3.25) continue;
+
+      TLorentzVector muon14V, muon24V;
+      muon14V.SetXYZM(iMuon1->track()->px(), iMuon1->track()->py(), iMuon1->track()->pz(), muon_mass);
+      muon24V.SetXYZM(iMuon2->track()->px(), iMuon2->track()->py(), iMuon2->track()->pz(), muon_mass);
+
+      float deltaRmumu_tmp = muon14V.DeltaR(muon24V);
  
       nJpsi++;     
 
@@ -796,6 +795,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             J_px->push_back( J_vFit_noMC->currentState().globalMomentum().x() );
 	    J_py->push_back( J_vFit_noMC->currentState().globalMomentum().y() );
 	    J_pz->push_back( J_vFit_noMC->currentState().globalMomentum().z() );
+            deltaRmumu->push_back(deltaRmumu_tmp);
 
             J_pt1->push_back(Jp1vec.perp());
 	    J_px1->push_back(psiMu1KP.momentum().x());
@@ -937,7 +937,7 @@ void Psi2Spi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    piPi_mass->clear(); psiPiPi_mass->clear();
    deltaR1->clear(); deltaR2->clear(); pointingAngle->clear();
 
-   J_mass->clear();  J_px->clear();  J_py->clear();  J_pz->clear();
+   J_mass->clear();  J_px->clear();  J_py->clear();  J_pz->clear(); deltaRmumu->clear();
 
    J_pt1->clear();  J_px1->clear();  J_py1->clear();  J_pz1->clear(), J_charge1->clear();
    J_pt2->clear();  J_px2->clear();  J_py2->clear();  J_pz2->clear(), J_charge2->clear();
@@ -1100,6 +1100,7 @@ void Psi2Spi::beginJob()
   tree_->Branch("J_px", &J_px);
   tree_->Branch("J_py", &J_py);
   tree_->Branch("J_pz", &J_pz);
+  tree_->Branch("deltaRmumu", &deltaRmumu);
 
   tree_->Branch("J_pt1", &J_pt1);
   tree_->Branch("J_px1", &J_px1);

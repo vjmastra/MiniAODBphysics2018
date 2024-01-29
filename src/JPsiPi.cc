@@ -48,6 +48,9 @@
 #include "DataFormats/Common/interface/RefToBase.h"
 #include "DataFormats/Candidate/interface/ShallowCloneCandidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/Candidate/interface/CandMatchMap.h"
 #include "DataFormats/Math/interface/Error.h"
 #include "RecoVertex/VertexTools/interface/VertexDistance.h"
@@ -91,11 +94,14 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
   dimuon_Label(consumes<edm::View<pat::Muon>>(iConfig.getParameter<edm::InputTag>("dimuons"))),
   trakCollection_label(consumes<edm::View<pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("Trak"))),
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
+  primaryVerticesWithBS_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVerticesWithBS"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
   builderToken_(esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"))),
   triggerCollection_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("TriggerInput"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
-  genParticles_ ( iConfig.getUntrackedParameter<std::string>("GenParticles",std::string("genParticles")) ),
+  //genParticles_ ( iConfig.getUntrackedParameter<std::string>("GenParticles",std::string("genParticles")) ),
+  genParticles_(consumes<reco::GenParticleCollection>(iConfig.getParameter < edm::InputTag > ("GenParticles"))),
+  packedGenToken_(consumes<pat::PackedGenParticleCollection>(iConfig.getParameter <edm::InputTag> ("packedGenParticles"))), 
   OnlyBest_(iConfig.getParameter<bool>("OnlyBest")),
   isMC_(iConfig.getParameter<bool>("isMC")),
   OnlyGen_(iConfig.getParameter<bool>("OnlyGen")),
@@ -113,6 +119,16 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
   nVtx(0),
   priVtxX(0), priVtxY(0), priVtxZ(0), priVtxXE(0), priVtxYE(0), priVtxZE(0), priVtxCL(0),
   priVtxXYE(0), priVtxXZE(0), priVtxYZE(0),
+
+  bestVtxX(0), bestVtxY(0), bestVtxZ(0), bestVtxXE(0), bestVtxYE(0), bestVtxZE(0), bestVtxCL(0),
+  bestVtxXYE(0), bestVtxXZE(0), bestVtxYZE(0),
+
+  bestWBSVtxX(0), bestWBSVtxY(0), bestWBSVtxZ(0), bestWBSVtxXE(0), bestWBSVtxYE(0), bestWBSVtxZE(0), bestWBSVtxCL(0),
+  bestWBSVtxXYE(0), bestWBSVtxXZE(0), bestWBSVtxYZE(0),
+
+  trkVtxX(0), trkVtxY(0), trkVtxZ(0), trkVtxXE(0), 
+  trkVtxYE(0), trkVtxZE(0), trkVtxCL(0),
+  trkVtxXYE(0), trkVtxXZE(0), trkVtxYZE(0),
 
   indexVtx(0), vRefTrk(0),
 
@@ -157,6 +173,12 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
   bFlightLen(0), bFlightLenErr(0), bFlightLenSig(0),
   bFlightLen2D(0), bFlightLenErr2D(0), bFlightLenSig2D(0),
   bFlightTime(0), bFlightTimeErr(0),
+  bFlightTime3D(0), bFlightTime3DErr(0),
+  bFlightTimeM(0), bFlightTimeMErr(0),
+  bFlightTimeBest(0), bFlightTimeBestErr(0),
+  bFlightTimeBestWBS(0), bFlightTimeBestWBSErr(0),
+  bFlightTimeTrk(0), bFlightTimeTrkErr(0),
+  bFlightTimeOld(0), bFlightTimeOldErr(0),
   deltaR_J_pi(0), cosAngle_J_pi(0),
  
   J_chi2(0), B_chi2(0),
@@ -199,6 +221,12 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   edm::Handle<std::vector<pat::TriggerObjectStandAlone>> triggerCollection;
   iEvent.getByToken(triggerCollection_, triggerCollection);
+
+  edm::Handle<reco::GenParticleCollection> pruned;
+  iEvent.getByToken(genParticles_, pruned);
+
+  edm::Handle<pat::PackedGenParticleCollection> packed;
+  iEvent.getByToken(packedGenToken_, packed);
 
   //Trigger Collections
 
@@ -244,6 +272,7 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // *********************************
 
   reco::Vertex highestptVtx;
+  reco::Vertex highestptVtxWithBS;
 
   // get primary vertex
   edm::Handle<std::vector<reco::Vertex> > recVtxs;
@@ -252,9 +281,110 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   highestptVtx = *(recVtxs->begin());
   nVtx = recVtxs->size();
 
+  edm::Handle<std::vector<reco::Vertex> > recVtxsWithBS;
+  iEvent.getByToken(primaryVerticesWithBS_Label, recVtxsWithBS);
+
+  highestptVtxWithBS = *(recVtxsWithBS->begin());
+
   lumiblock = iEvent.id().luminosityBlock();
   run = iEvent.id().run();
   event = iEvent.id().event(); 
+
+  //*********************************
+  // Get gen level information
+  //*********************************
+  
+  gen_bc_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+  gen_jpsi_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+  gen_pion3_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+  gen_muon1_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+  gen_muon2_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+  gen_bc_vtx.SetXYZ(0.,0.,0.);
+  gen_jpsi_vtx.SetXYZ(0.,0.,0.);
+  gen_bc_ct = -9999.;
+  jpsiGenMatched = 0;
+  candGenMatched = 0;
+
+  if ( (isMC_ || OnlyGen_) && pruned.isValid() ) {
+    int foundit = 0;
+    for (size_t i=0; i<pruned->size(); i++) {
+      foundit = 0;
+      const reco::Candidate *dau = &(*pruned)[i];
+      if ( (abs(dau->pdgId()) == 541) ) { //&& (dau->status() == 2) ) {
+	foundit++;
+	gen_bc_p4.SetPtEtaPhiM(dau->pt(),dau->eta(),dau->phi(),dau->mass());
+	gen_bc_vtx.SetXYZ(dau->vx(),dau->vy(),dau->vz());
+	for (size_t k=0; k<dau->numberOfDaughters(); k++) {
+	  const reco::Candidate *gdau = dau->daughter(k);
+	  if (gdau->pdgId()==443 ) { //&& gdau->status()==2) {
+	    foundit++;
+	    gen_jpsi_vtx.SetXYZ(gdau->vx(),gdau->vy(),gdau->vz());
+	    gen_bc_ct = GetLifetime(gen_bc_p4,gen_bc_vtx,gen_jpsi_vtx);
+	    int nm=0;
+	    for (size_t l=0; l<gdau->numberOfDaughters(); l++) {
+	      const reco::Candidate *mm = gdau->daughter(l);
+	      if (mm->pdgId()==13) { foundit++;
+		if (mm->status()!=1) {
+		  for (size_t m=0; m<mm->numberOfDaughters(); m++) {
+		    const reco::Candidate *mu = mm->daughter(m);
+		    if (mu->pdgId()==13 ) { //&& mu->status()==1) {
+		      nm++;
+		      gen_muon1_p4.SetPtEtaPhiM(mu->pt(),mu->eta(),mu->phi(),mu->mass());
+		      break;
+		    }
+		  }
+		} else {
+		  gen_muon1_p4.SetPtEtaPhiM(mm->pt(),mm->eta(),mm->phi(),mm->mass());
+		  nm++;
+		}
+	      }
+	      if (mm->pdgId()==-13) { foundit++;
+		if (mm->status()!=1) {
+		  for (size_t m=0; m<mm->numberOfDaughters(); m++) {
+		    const reco::Candidate *mu = mm->daughter(m);
+		    if (mu->pdgId()==-13 ) { //&& mu->status()==1) {
+		      nm++;
+		      gen_muon2_p4.SetPtEtaPhiM(mu->pt(),mu->eta(),mu->phi(),mu->mass());
+		      break;
+		    }
+		  }
+		} else {
+		  gen_muon2_p4.SetPtEtaPhiM(mm->pt(),mm->eta(),mm->phi(),mm->mass());
+		  nm++;
+		}
+	      }
+	    }
+	    if (nm==2) gen_jpsi_p4.SetPtEtaPhiM(gdau->pt(),gdau->eta(),gdau->phi(),gdau->mass());
+	    else foundit-=nm;
+	  }
+	} // for (size_t k
+
+	for (size_t lk=0; lk<packed->size(); lk++) {
+	  const reco::Candidate * dauInPrunedColl = (*packed)[lk].mother(0);
+	  int stable_id = (*packed)[lk].pdgId();
+	  
+	  if (dauInPrunedColl != nullptr && isAncestor(dau,dauInPrunedColl)) {
+	    if( abs(stable_id) == 321 || abs(stable_id) == 211 ) {foundit++;
+	      gen_pion3_p4.SetPtEtaPhiM((*packed)[lk].pt(),(*packed)[lk].eta(),(*packed)[lk].phi(),(*packed)[lk].mass());
+	    }
+	  }
+	}
+	//if ((abs(gdau->pdgId())==211 || abs(gdau->pdgId())==321) && gdau->status()==1) { foundit++;
+	//gen_pion3_p4.SetPtEtaPhiM(gdau->pt(),gdau->eta(),gdau->phi(),gdau->mass());
+	//}
+	//} // for (size_t k
+      }   // if (abs(dau->pdgId())==521 )
+      if (foundit>=5) break;
+    } // for i
+    if (foundit!=5) {
+      gen_bc_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+      gen_jpsi_p4.SetPtEtaPhiM(0.,0.,0.,0.);
+      gen_bc_vtx.SetXYZ(0.,0.,0.);
+      gen_jpsi_vtx.SetXYZ(0.,0.,0.);
+      gen_bc_ct = -9999.;
+      //std::cout << "Does not found the given decay " << run << "," << event << " foundit=" << foundit << std::endl; // sanity check
+    }
+  }
 
   //*****************************************
   //Let's begin by looking for J/psi->mu+mu-
@@ -469,7 +599,40 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         priVtxYZE = bestVtxBSIP.covariance(1, 2);
         priVtxCL = (TMath::Prob(bestVtxBSIP.chi2(), (int)bestVtxBSIP.ndof()));
 
-        //Flight distance
+        bestVtxX = highestptVtx.x(); 
+        bestVtxY = highestptVtx.y();
+        bestVtxZ = highestptVtx.z();
+        bestVtxXE = highestptVtx.covariance(0, 0);
+        bestVtxYE = highestptVtx.covariance(1, 1);
+        bestVtxZE = highestptVtx.covariance(2, 2);
+        bestVtxXYE = highestptVtx.covariance(0, 1);
+        bestVtxXZE = highestptVtx.covariance(0, 2);
+        bestVtxYZE = highestptVtx.covariance(1, 2);
+
+        bestWBSVtxX = highestptVtxWithBS.x();
+        bestWBSVtxY = highestptVtxWithBS.y();
+        bestWBSVtxZ = highestptVtxWithBS.z();
+        bestWBSVtxXE = highestptVtxWithBS.covariance(0, 0);
+        bestWBSVtxYE = highestptVtxWithBS.covariance(1, 1);
+        bestWBSVtxZE = highestptVtxWithBS.covariance(2, 2);
+        bestWBSVtxXYE = highestptVtxWithBS.covariance(0, 1);
+        bestWBSVtxXZE = highestptVtxWithBS.covariance(0, 2);
+        bestWBSVtxYZE = highestptVtxWithBS.covariance(1, 2);
+
+        reco::Vertex trkVtx = recVtxs->at(vRefTrk); 
+
+        trkVtxX = trkVtx.x();
+        trkVtxY = trkVtx.y();
+        trkVtxZ = trkVtx.z();
+        trkVtxXE = trkVtx.covariance(0, 0);
+        trkVtxYE = trkVtx.covariance(1, 1);
+        trkVtxZE = trkVtx.covariance(2, 2);
+        trkVtxXYE = trkVtx.covariance(0, 1);
+        trkVtxXZE = trkVtx.covariance(0, 2);
+        trkVtxYZE = trkVtx.covariance(1, 2);
+
+        //Compute flight len distance
+
             
         Double_t pVtx[3] = {bestVtxBSIP.x(), bestVtxBSIP.y(), bestVtxBSIP.z()};
         Double_t pVtxCov[6] = {bestVtxBSIP.covariance(0, 0), bestVtxBSIP.covariance(1, 1), bestVtxBSIP.covariance(2, 2), bestVtxBSIP.covariance(0, 1), bestVtxBSIP.covariance(0, 2), bestVtxBSIP.covariance(1, 2)}; //xx yy zz xy xz yz
@@ -502,7 +665,9 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         d0ErrPi = iTrack->dxyError();
         d0SigPi = (d0ErrPi == 0) ? 0 : fabs(d0ValPi/d0ErrPi);
 
-        TLorentzVector jpsi4V, pi4V;
+        TLorentzVector muon14V, muon24V, jpsi4V, pi4V;
+        muon14V.SetXYZM(iMuon1->px(), iMuon1->py(), iMuon1->pz(), muon_mass);
+        muon24V.SetXYZM(iMuon2->px(), iMuon2->py(), iMuon2->pz(), muon_mass);
         jpsi4V.SetXYZM(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z(), Jpsi_mass);
         pi4V.SetXYZM(iTrack->px(), iTrack->py(), iTrack->pz(), pion_mass);
         deltaR_J_pi = jpsi4V.DeltaR(pi4V);
@@ -521,7 +686,25 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             if(obj.collection().find(hltTkColl1) != std::string::npos && MatchByDRDPt(*iTrack, obj)) trkHLT1matched = true;
           }
         }
-    
+   
+        //Gen matching
+        //gen_muon1_p4 gen_muon2_p4 gen_pion3_p4
+        if (isMC_) {
+          double dr11 = gen_muon1_p4.DeltaR(muon14V);
+          double dr22 = gen_muon2_p4.DeltaR(muon24V);
+          double dr12 = gen_muon1_p4.DeltaR(muon24V);
+          double dr21 = gen_muon2_p4.DeltaR(muon14V);
+          jpsiGenMatched = (dr11 < 0.01 && dr22 < 0.01) || (dr12 < 0.01 && dr21 < 0.01);
+          double drpi = gen_pion3_p4.DeltaR(pi4V);
+          candGenMatched = jpsiGenMatched && (drpi < 0.01);
+          //dr11 < 0.05 ? trkVtxX = dr11 : trkVtxX = 0;
+          //dr22 < 0.05 ? trkVtxY = dr22 : trkVtxY = 0;
+          //drpi < 0.05 ? trkVtxZ = drpi : trkVtxZ = 0;
+          //dr12 < 0.05 ? trkVtxXE = dr12 : trkVtxXE = 0;
+          //dr21 < 0.05 ? trkVtxYE = dr21 : trkVtxYE = 0;
+        }
+
+         
         //std::cout << mu1HLTmatched << " " << mu2HLTmatched << " " << trkHLT0matched << " " << trkHLT1matched << std::endl;
 
         // get children from final B fit
@@ -643,10 +826,120 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	mumdz = glbTrackM->dz(bestVtxBSIP.position());
 	mupdz = glbTrackP->dz(bestVtxBSIP.position());
 	
-        //Proper time calculation
-        
-        double len[2] = {sVtx[0]-pVtx[0], sVtx[1]-pVtx[1]};
 
+        const double BMASSPDG = 6.27447;
+        const double lightspeed = 2.99792458;
+        const double cm2ps = (100./lightspeed);
+        //Proper time calculation - pointing angle
+
+        TVector3 pvtx(bestVtxBSIP.position().x(),bestVtxBSIP.position().y(),0);
+
+        TVector3 vtx((*bDecayVertexMC).position().x(),(*bDecayVertexMC).position().y(),0);
+        TVector3 pperp(bCandMC->currentState().kinematicParameters().momentum().x(), bCandMC->currentState().kinematicParameters().momentum().y(), 0);
+        AlgebraicVector3 vpperp(pperp.x(),pperp.y(),0);
+        TVector3 vdiff = vtx - pvtx;
+        double cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
+
+	GlobalError v1e = bDecayVertexMC->error();
+        GlobalError v2e = bestVtxBSIP.error();
+        AlgebraicSymMatrix33 vXYe = v1e.matrix() + v2e.matrix();
+
+        float lxy = vdiff.Perp();
+        ROOT::Math::SVector<double, 3> vDiff; // needed by Similarity method
+        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
+        float lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
+
+        bFlightLen2D = lxy;
+        bFlightLenErr2D = lxyErr;
+
+        VertexDistanceXY vdistXY;
+        Measurement1D distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), bestVtxBSIP);
+        bFlightTime = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
+        bFlightTimeErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
+
+        //Flight time baseline with mass from kinematic fit
+
+        bFlightTimeM = cm2ps * distXY.value() * cosAlpha * bCandMC->currentState().mass() / pperp.Perp();
+        bFlightTimeMErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * bCandMC->currentState().mass() / pperp.Perp2();
+
+        //Highest pt
+        
+        pvtx.SetXYZ(highestptVtx.position().x(), highestptVtx.position().y(),0);
+
+        vdiff = vtx - pvtx;
+        cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
+
+        v2e = highestptVtx.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        lxy = vdiff.Perp();
+        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
+        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
+
+        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), highestptVtx);
+        bFlightTimeBest = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
+        bFlightTimeBestErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
+
+        //highest pt with BS constraint
+        
+        pvtx.SetXYZ(highestptVtxWithBS.position().x(), highestptVtxWithBS.position().y(),0);
+
+        vdiff = vtx - pvtx;
+        cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
+
+        v2e = highestptVtxWithBS.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        lxy = vdiff.Perp();
+        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
+        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
+
+        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), highestptVtxWithBS);
+        bFlightTimeBestWBS = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
+        bFlightTimeBestWBSErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
+
+        //pv associated to the track
+       
+        pvtx.SetXYZ(trkVtx.position().x(), trkVtx.position().y(),0);
+
+        vdiff = vtx - pvtx;
+        cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
+
+        v2e = trkVtx.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        lxy = vdiff.Perp();
+        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
+        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
+
+        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), trkVtx);
+        bFlightTimeTrk = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
+        bFlightTimeTrkErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
+
+        //baseline but 3d
+
+        pvtx.SetXYZ(bestVtxBSIP.position().x(),bestVtxBSIP.position().y(),bestVtxBSIP.position().z());        
+
+        vtx.SetXYZ((*bDecayVertexMC).position().x(),(*bDecayVertexMC).position().y(),(*bDecayVertexMC).position().z());
+        pperp.SetXYZ(bCandMC->currentState().kinematicParameters().momentum().x(), bCandMC->currentState().kinematicParameters().momentum().y(), bCandMC->currentState().kinematicParameters().momentum().z());
+        AlgebraicVector3 vp(pperp.x(),pperp.y(),pperp.z());
+        vdiff = vtx - pvtx;
+        cosAlpha = vdiff.Dot(pperp) / (vdiff.Mag() * pperp.Mag());
+
+        v2e = bestVtxBSIP.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        lxy = vdiff.Mag();
+        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = vdiff.z(); // needed by Similarity method
+        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Mag();
+
+        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), bestVtxBSIP);
+        bFlightTime3D = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Mag();
+        bFlightTime3DErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Mag2();
+
+        //old flight length
+
+        double len[2] = {sVtx[0] - pVtx[0], sVtx[1] - pVtx[1]};
         double factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
         double elen[3] = {	bestVtxBSIP.covariance(0, 0) + bDecayVertexMC->error().cxx(), 
 				bestVtxBSIP.covariance(1, 1) + bDecayVertexMC->error().cyy(), 
@@ -674,13 +967,63 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         for (int i = 0; i < 3; i++) c += mom2[i]*emom[i];
         B_pt > 0 ? c = TMath::Sqrt(c)/B_pt : c = 0.;
       
-        B_pt > 0 ? bFlightTime = tDecLen * B_mass / B_pt : bFlightTime = -10.;
-        const double lightspeed = 2.99792458;
-        bFlightTime *= (100./lightspeed);
-        bFlightTimeErr = bFlightTime * TMath::Sqrt( a*a + b*b + c*c);
+        //B_pt > 0 ? bFlightTime = tDecLen * B_mass / B_pt : bFlightTime = -10.;
+        B_pt > 0 ? bFlightTimeOld = tDecLen * BMASSPDG / B_pt : bFlightTimeOld = -10.;
+        bFlightTimeOld *= cm2ps;
+        //bFlightTimeErr = bFlightTime * TMath::Sqrt( a*a + b*b + c*c);
+        bFlightTimeOldErr = TMath::Abs(bFlightTimeOld) * TMath::Sqrt( b*b + c*c);
 
         //std::cout << bFlightTime << " " << bFlightTimeErr << " " << bFlightTimeErr/bFlightTime << std::endl;
+/*
+        //Proper time calculation - highest pt vtx
+        
+        len[0] = sVtx[0]-bestVtxX; len[1] = sVtx[1]-bestVtxY;
+        factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
+        elen[0] = highestptVtx.covariance(0, 0) + bDecayVertexMC->error().cxx();
+        elen[1] = highestptVtx.covariance(1, 1) + bDecayVertexMC->error().cyy();
+        elen[2] = factor*(highestptVtx.covariance(0, 1) + bDecayVertexMC->error().cyx());
 
+        tDecLen = ProperTime(len, mom);
+        tDecLenErr = ProperTimeErr(len, elen, mom, emom);
+        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
+ 
+        B_pt > 0 ? bFlightTimeBest = tDecLen * BMASSPDG / B_pt : bFlightTimeBest = -10.;
+        bFlightTimeBest *= (100./lightspeed);
+        bFlightTimeBestErr = TMath::Abs(bFlightTimeBest) * TMath::Sqrt(b*b + c*c);
+
+        //Proper time calculation - highest pt vtx wBS
+
+        len[0] = sVtx[0]-bestWBSVtxX; len[1] = sVtx[1]-bestWBSVtxY;
+        factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
+        elen[0] = highestptVtxWithBS.covariance(0, 0) + bDecayVertexMC->error().cxx();
+        elen[1] = highestptVtxWithBS.covariance(1, 1) + bDecayVertexMC->error().cyy();
+        elen[2] = factor*(highestptVtxWithBS.covariance(0, 1) + bDecayVertexMC->error().cyx());
+
+        tDecLen = ProperTime(len, mom);
+        tDecLenErr = ProperTimeErr(len, elen, mom, emom);
+        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
+
+        B_pt > 0 ? bFlightTimeBestWBS = tDecLen * BMASSPDG / B_pt : bFlightTimeBestWBS = -10.;
+        bFlightTimeBestWBS *= (100./lightspeed);
+        bFlightTimeBestWBSErr = TMath::Abs(bFlightTimeBestWBS) * TMath::Sqrt(b*b + c*c);
+
+        //Propert time calculation - from vtx associated to the track
+
+        len[0] = sVtx[0]-trkVtxX;
+        len[1] = sVtx[1]-trkVtxY;
+        factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
+        elen[0] = trkVtx.covariance(0, 0) + bDecayVertexMC->error().cxx();
+        elen[1] = trkVtx.covariance(1, 1) + bDecayVertexMC->error().cyy();
+        elen[2] = factor*(trkVtx.covariance(0, 1) + bDecayVertexMC->error().cyx());
+
+        tDecLen = ProperTime(len, mom);
+        tDecLenErr = ProperTimeErr(len, elen, mom, emom);
+        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
+
+        B_pt > 0 ? bFlightTimeTrk = tDecLen * BMASSPDG / B_pt : bFlightTimeTrk = -10.;
+        bFlightTimeTrk *= (100./lightspeed);
+        bFlightTimeTrkErr = TMath::Abs(bFlightTimeTrk) * TMath::Sqrt(b*b + c*c);
+*/
         //Fill and count
   
         tree_->Fill();    
@@ -711,6 +1054,18 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         priVtxXYE = 0.; priVtxXZE = 0.; priVtxYZE = 0.;
         priVtxCL = 0;
 
+        bestVtxX = 0.; bestVtxY = 0.; bestVtxZ = 0.;
+        bestVtxXE = 0.; bestVtxYE = 0.; bestVtxZE = 0.;
+        bestVtxXYE = 0.; bestVtxXZE = 0.; bestVtxYZE = 0.;
+
+        bestWBSVtxX = 0.; bestWBSVtxY = 0.; bestWBSVtxZ = 0.;
+        bestWBSVtxXE = 0.; bestWBSVtxYE = 0.; bestWBSVtxZE = 0.;
+        bestWBSVtxXYE = 0.; bestWBSVtxXZE = 0.; bestWBSVtxYZE = 0.;
+
+        trkVtxX = 0.; trkVtxY = 0.; trkVtxZ = 0.;
+        trkVtxXE = 0.; trkVtxYE = 0.; trkVtxZE = 0.;
+        trkVtxXYE = 0.; trkVtxXZE = 0.; trkVtxYZE = 0.;
+
         indexVtx = 0; vRefTrk = 0;
 
         jFlightLen = 0.; jFlightLenErr = 0.; jFlightLenSig = 0.;
@@ -722,6 +1077,11 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         deltaR_J_pi = 0.; cosAngle_J_pi = 0.;
 
         bFlightTime = 0.; bFlightTimeErr = 0.;
+        bFlightTime3D = 0.; bFlightTime3DErr = 0.;
+        bFlightTimeM = 0.; bFlightTimeMErr = 0.;
+        bFlightTimeBest = 0.; bFlightTimeBestErr = 0.;
+        bFlightTimeBestWBS = 0.; bFlightTimeBestWBSErr = 0.;
+        bFlightTimeTrk = 0.; bFlightTimeTrkErr = 0.;
 
         JDecayVtxX = 0.; JDecayVtxY = 0.; JDecayVtxZ = 0.;
         JDecayVtxXE = 0.; JDecayVtxYE = 0.; JDecayVtxZE = 0.;
@@ -740,7 +1100,10 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         mu1loose = 0; mu1tight = 0;
         mu2soft = 0; mu2PF = 0;
         mu2loose = 0; mu2tight = 0;
- 
+
+        jpsiGenMatched = 0;
+        candGenMatched = 0; 
+
         muonParticles.clear();
 	vFitMCParticles.clear();
 	   
@@ -886,6 +1249,23 @@ bool JPsiPi::MatchByDRDPt(const pat::Muon t1, const pat::TriggerObjectStandAlone
   return ptFlag && dRFlag;
 }
 
+bool JPsiPi::isAncestor(const reco::Candidate* ancestor, const reco::Candidate * particle) {
+    if (ancestor == particle ) return true;
+    for (size_t i=0; i< particle->numberOfMothers(); i++) {
+        if (isAncestor(ancestor,particle->mother(i))) return true;
+    }
+    return false;
+}
+
+double JPsiPi::GetLifetime(TLorentzVector b_p4, TVector3 production_vtx, TVector3 decay_vtx) {
+   TVector3 pv_dv = decay_vtx - production_vtx;
+   TVector3 b_p3  = b_p4.Vect();
+   pv_dv.SetZ(0.);
+   b_p3.SetZ(0.);
+   Double_t lxy   = pv_dv.Dot(b_p3)/b_p3.Mag();
+   return lxy*b_p4.M()/b_p3.Mag();
+}
+
 // ------------ method called once each job just before starting event loop  ------------
 
 void JPsiPi::beginJob()
@@ -977,6 +1357,36 @@ void JPsiPi::beginJob()
   tree_->Branch("priVtxYZE",&priVtxYZE);
   tree_->Branch("priVtxCL",&priVtxCL);
 
+  tree_->Branch("bestVtxX",&bestVtxX);
+  tree_->Branch("bestVtxY",&bestVtxY);
+  tree_->Branch("bestVtxZ",&bestVtxZ);
+  tree_->Branch("bestVtxXE",&bestVtxXE);
+  tree_->Branch("bestVtxYE",&bestVtxYE);
+  tree_->Branch("bestVtxZE",&bestVtxZE);
+  tree_->Branch("bestVtxXYE",&bestVtxXYE);
+  tree_->Branch("bestVtxXZE",&bestVtxXZE);
+  tree_->Branch("bestVtxYZE",&bestVtxYZE);
+
+  tree_->Branch("bestWBSVtxX",&bestWBSVtxX);
+  tree_->Branch("bestWBSVtxY",&bestWBSVtxY);
+  tree_->Branch("bestWBSVtxZ",&bestWBSVtxZ);
+  tree_->Branch("bestWBSVtxXE",&bestWBSVtxXE);
+  tree_->Branch("bestWBSVtxYE",&bestWBSVtxYE);
+  tree_->Branch("bestWBSVtxZE",&bestWBSVtxZE);
+  tree_->Branch("bestWBSVtxXYE",&bestWBSVtxXYE);
+  tree_->Branch("bestWBSVtxXZE",&bestWBSVtxXZE);
+  tree_->Branch("bestWBSVtxYZE",&bestWBSVtxYZE);
+
+  tree_->Branch("trkVtxX",&trkVtxX);
+  tree_->Branch("trkVtxY",&trkVtxY);
+  tree_->Branch("trkVtxZ",&trkVtxZ);
+  tree_->Branch("trkVtxXE",&trkVtxXE);
+  tree_->Branch("trkVtxYE",&trkVtxYE);
+  tree_->Branch("trkVtxZE",&trkVtxZE);
+  tree_->Branch("trkVtxXYE",&trkVtxXYE);
+  tree_->Branch("trkVtxXZE",&trkVtxXZE);
+  tree_->Branch("trkVtxYZE",&trkVtxYZE);
+
   tree_->Branch("indexVtx", &indexVtx);
   tree_->Branch("vRefTrk", &vRefTrk);
 
@@ -1000,6 +1410,18 @@ void JPsiPi::beginJob()
   tree_->Branch("bFlightLenSig2D", &bFlightLenSig2D);
   tree_->Branch("bFlightTime", &bFlightTime);
   tree_->Branch("bFlightTimeErr", &bFlightTimeErr);
+  tree_->Branch("bFlightTime3D", &bFlightTime3D);
+  tree_->Branch("bFlightTime3DErr", &bFlightTime3DErr);
+  tree_->Branch("bFlightTimeM", &bFlightTimeM);
+  tree_->Branch("bFlightTimeMErr", &bFlightTimeMErr);
+  tree_->Branch("bFlightTimeBest", &bFlightTimeBest);
+  tree_->Branch("bFlightTimeBestErr", &bFlightTimeBestErr);
+  tree_->Branch("bFlightTimeBestWBS", &bFlightTimeBestWBS);
+  tree_->Branch("bFlightTimeBestWBSErr", &bFlightTimeBestWBSErr);
+  tree_->Branch("bFlightTimeTrk", &bFlightTimeTrk);
+  tree_->Branch("bFlightTimeTrkErr", &bFlightTimeTrkErr);
+  tree_->Branch("bFlightTimeOld", &bFlightTimeOld);
+  tree_->Branch("bFlightTimeOldErr", &bFlightTimeOldErr);
 
   tree_->Branch("JDecayVtxX",&JDecayVtxX);
   tree_->Branch("JDecayVtxY",&JDecayVtxY);
@@ -1042,6 +1464,18 @@ void JPsiPi::beginJob()
   tree_->Branch("mu1loose",&mu1loose);
   tree_->Branch("mu2loose",&mu2loose);
 
+  if (isMC_) {
+    tree_->Branch("gen_bc_p4",     "TLorentzVector",  &gen_bc_p4);
+    tree_->Branch("gen_jpsi_p4",   "TLorentzVector",  &gen_jpsi_p4);
+    tree_->Branch("gen_pion3_p4",  "TLorentzVector",  &gen_pion3_p4);
+    tree_->Branch("gen_muon1_p4",  "TLorentzVector",  &gen_muon1_p4);
+    tree_->Branch("gen_muon2_p4",  "TLorentzVector",  &gen_muon2_p4);
+    tree_->Branch("gen_bc_vtx",    "TVector3",        &gen_bc_vtx);
+    tree_->Branch("gen_jpsi_vtx",  "TVector3",        &gen_jpsi_vtx);
+    tree_->Branch("gen_bc_ct",     &gen_bc_ct,        "gen_bc_ct/F");
+    tree_->Branch("jpsiGenMatched", &jpsiGenMatched);
+    tree_->Branch("candGenMatched", &candGenMatched);
+  }
 }
 
 // ------------ method called once each job just after ending the event loop  ------------

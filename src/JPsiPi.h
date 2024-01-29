@@ -47,6 +47,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoChargedCandidate.h"
 
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h" // muy importante para MiniAOD
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 
 #include "CondFormats/L1TObjects/interface/L1GtTriggerMenu.h"
 #include "CondFormats/DataRecord/interface/L1GtTriggerMenuRcd.h"
@@ -66,6 +67,9 @@
 
 #include "TFile.h"
 #include "TTree.h"
+
+#include "TLorentzVector.h"
+#include "TVector3.h"
 
 //
 // class decleration
@@ -90,6 +94,8 @@ public:
   float DeltaR(const pat::Muon t1, const pat::TriggerObjectStandAlone t2);
   float DeltaPt(const pat::Muon t1, const pat::TriggerObjectStandAlone t2);
   bool MatchByDRDPt(const pat::Muon t1, const pat::TriggerObjectStandAlone t2);
+  bool   isAncestor(const reco::Candidate*, const reco::Candidate*);
+  double GetLifetime(TLorentzVector, TVector3, TVector3);
 
 private:
   virtual void beginJob() ;
@@ -103,12 +109,16 @@ private:
   edm::EDGetTokenT<edm::View<pat::Muon>> dimuon_Label;
   edm::EDGetTokenT<edm::View<pat::PackedCandidate>> trakCollection_label;
   edm::EDGetTokenT<reco::VertexCollection> primaryVertices_Label;
+  edm::EDGetTokenT<reco::VertexCollection> primaryVerticesWithBS_Label;
   edm::EDGetTokenT<reco::BeamSpot> BSLabel_;
   edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> builderToken_;
   edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerCollection_;
   edm::EDGetTokenT<edm::TriggerResults> triggerResults_Label;
 
-  std::string genParticles_;
+  //std::string genParticles_;
+  edm::EDGetTokenT<reco::GenParticleCollection> genParticles_;
+  edm::EDGetTokenT<pat::PackedGenParticleCollection> packedGenToken_;
+
   bool OnlyBest_;
   bool isMC_;
   bool OnlyGen_;
@@ -134,17 +144,27 @@ private:
   int         muAcc, muTrig, weight;
  
   unsigned int nVtx;
-  float       priVtxX, priVtxY, priVtxZ, priVtxXE, priVtxYE, priVtxZE, priVtxCL;
-  float       priVtxXYE, priVtxXZE, priVtxYZE;
+
+  double       priVtxX, priVtxY, priVtxZ, priVtxXE, priVtxYE, priVtxZE, priVtxCL;
+  double       priVtxXYE, priVtxXZE, priVtxYZE;
+
+  double       bestVtxX, bestVtxY, bestVtxZ, bestVtxXE, bestVtxYE, bestVtxZE, bestVtxCL;
+  double       bestVtxXYE, bestVtxXZE, bestVtxYZE;
+
+  double       bestWBSVtxX, bestWBSVtxY, bestWBSVtxZ, bestWBSVtxXE, bestWBSVtxYE, bestWBSVtxZE, bestWBSVtxCL;
+  double       bestWBSVtxXYE, bestWBSVtxXZE, bestWBSVtxYZE;
+
+  double       trkVtxX, trkVtxY, trkVtxZ, trkVtxXE, trkVtxYE, trkVtxZE, trkVtxCL;
+  double       trkVtxXYE, trkVtxXZE, trkVtxYZE;
 
   int         indexVtx;
   int         vRefTrk; 
 
-  float       JDecayVtxX, JDecayVtxY, JDecayVtxZ;
+  double       JDecayVtxX, JDecayVtxY, JDecayVtxZ;
   double      JDecayVtxXE, JDecayVtxYE, JDecayVtxZE;
   double      JDecayVtxXYE, JDecayVtxXZE, JDecayVtxYZE;
 
-  float       BDecayVtxX, BDecayVtxY, BDecayVtxZ;
+  double       BDecayVtxX, BDecayVtxY, BDecayVtxZ;
   double      BDecayVtxXE, BDecayVtxYE, BDecayVtxZE;
   double      BDecayVtxXYE, BDecayVtxXZE, BDecayVtxYZE;
 
@@ -177,12 +197,18 @@ private:
   float       J_pt2, J_eta2, J_phi2;
   int         J_charge1, J_charge2;
  
-  float       jFlightLen, jFlightLenErr, jFlightLenSig;
-  float       jFlightLen2D, jFlightLenErr2D, jFlightLenSig2D;
-  float       bFlightLen, bFlightLenErr, bFlightLenSig;
-  float       bFlightLen2D, bFlightLenErr2D, bFlightLenSig2D;
-  float       bFlightTime, bFlightTimeErr;
-  float       deltaR_J_pi, cosAngle_J_pi;
+  double      jFlightLen, jFlightLenErr, jFlightLenSig;
+  double      jFlightLen2D, jFlightLenErr2D, jFlightLenSig2D;
+  double      bFlightLen, bFlightLenErr, bFlightLenSig;
+  double      bFlightLen2D, bFlightLenErr2D, bFlightLenSig2D;
+  double      bFlightTime, bFlightTimeErr;
+  double      bFlightTime3D, bFlightTime3DErr;
+  double      bFlightTimeM, bFlightTimeMErr;
+  double      bFlightTimeBest, bFlightTimeBestErr;
+  double      bFlightTimeBestWBS, bFlightTimeBestWBSErr;
+  double      bFlightTimeTrk, bFlightTimeTrkErr;
+  double      bFlightTimeOld, bFlightTimeOldErr;
+  double      deltaR_J_pi, cosAngle_J_pi;
 
   float       J_chi2, B_chi2; 
   float       B_Prob, J_Prob; 
@@ -190,6 +216,12 @@ private:
   int  run, event;
   int  lumiblock;
 
+  TLorentzVector gen_bc_p4,gen_jpsi_p4,gen_pion3_p4,gen_muon1_p4,gen_muon2_p4;
+  TVector3       gen_bc_vtx,gen_jpsi_vtx;
+  float          gen_bc_ct;
+
+  bool jpsiGenMatched;
+  bool candGenMatched;
 };
 
 #endif

@@ -16,6 +16,7 @@
 <use   name="MagneticField/Engine"/>
 <use   name="DataFormats/HepMCCandidate"/>
 <use   name="CondFormats/L1TObjects"/>
+<use   name="L1Trigger/L1TGlobal"/>
 <flags   EDM_PLUGIN="1"/>
 <export>
   <lib   name="1"/>

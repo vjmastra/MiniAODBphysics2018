@@ -95,7 +95,12 @@ public:
   float DeltaPt(const pat::Muon t1, const pat::TriggerObjectStandAlone t2);
   bool MatchByDRDPt(const pat::Muon t1, const pat::TriggerObjectStandAlone t2);
   bool   isAncestor(const reco::Candidate*, const reco::Candidate*);
-  double GetLifetime(TLorentzVector, TVector3, TVector3);
+  double flightDistance(TVector3, TVector3);
+  double pointingAngle(TVector3, TVector3);
+  double Get_ct_2D(TLorentzVector, TVector3, TVector3);
+  double Get_ct_2Derr(TLorentzVector, TVector3, TVector3, AlgebraicSymMatrix33, AlgebraicSymMatrix33);
+  double Get_ct_3D(TLorentzVector, TVector3, TVector3);
+  double Get_ct_3Derr(TLorentzVector, TVector3, TVector3, AlgebraicSymMatrix33, AlgebraicSymMatrix33);
 
 private:
   virtual void beginJob() ;
@@ -145,26 +150,26 @@ private:
  
   unsigned int nVtx;
 
-  double       priVtxX, priVtxY, priVtxZ, priVtxXE, priVtxYE, priVtxZE, priVtxCL;
-  double       priVtxXYE, priVtxXZE, priVtxYZE;
+  double      priVtxX, priVtxY, priVtxZ, priVtxXE, priVtxYE, priVtxZE, priVtxCL;
+  double      priVtxXYE, priVtxXZE, priVtxYZE;
 
-  double       bestVtxX, bestVtxY, bestVtxZ, bestVtxXE, bestVtxYE, bestVtxZE, bestVtxCL;
-  double       bestVtxXYE, bestVtxXZE, bestVtxYZE;
+  double      bestDistVtxX, bestDistVtxY, bestDistVtxZ, bestDistVtxXE, bestDistVtxYE, bestDistVtxZE, bestDistVtxCL;
+  double      bestDistVtxXYE, bestDistVtxXZE, bestDistVtxYZE;
 
-  double       bestWBSVtxX, bestWBSVtxY, bestWBSVtxZ, bestWBSVtxXE, bestWBSVtxYE, bestWBSVtxZE, bestWBSVtxCL;
-  double       bestWBSVtxXYE, bestWBSVtxXZE, bestWBSVtxYZE;
+  double      bestAngle2DVtxX, bestAngle2DVtxY, bestAngle2DVtxZ, bestAngle2DVtxXE, bestAngle2DVtxYE, bestAngle2DVtxZE, bestAngle2DVtxCL;
+  double      bestAngle2DVtxXYE, bestAngle2DVtxXZE, bestAngle2DVtxYZE;
 
-  double       trkVtxX, trkVtxY, trkVtxZ, trkVtxXE, trkVtxYE, trkVtxZE, trkVtxCL;
-  double       trkVtxXYE, trkVtxXZE, trkVtxYZE;
+  double      bestAngle3DVtxX, bestAngle3DVtxY, bestAngle3DVtxZ, bestAngle3DVtxXE, bestAngle3DVtxYE, bestAngle3DVtxZE, bestAngle3DVtxCL;
+  double      bestAngle3DVtxXYE, bestAngle3DVtxXZE, bestAngle3DVtxYZE;
 
-  int         indexVtx;
+  int         indexBestAngle2DVtx, indexBestAngle3DVtx, indexBestDistVtx;
   int         vRefTrk; 
 
-  double       JDecayVtxX, JDecayVtxY, JDecayVtxZ;
+  double      JDecayVtxX, JDecayVtxY, JDecayVtxZ;
   double      JDecayVtxXE, JDecayVtxYE, JDecayVtxZE;
   double      JDecayVtxXYE, JDecayVtxXZE, JDecayVtxYZE;
 
-  double       BDecayVtxX, BDecayVtxY, BDecayVtxZ;
+  double      BDecayVtxX, BDecayVtxY, BDecayVtxZ;
   double      BDecayVtxXE, BDecayVtxYE, BDecayVtxZE;
   double      BDecayVtxXYE, BDecayVtxXZE, BDecayVtxYZE;
 
@@ -179,8 +184,12 @@ private:
 
   float       B_mass, B_px, B_py, B_pz;
   float       B_pt, B_eta, B_phi;
-  float       jPointingAngle, bPointingAngle;
-  float       jPointingAngle2D, bPointingAngle2D;
+  float       jPointingAngle_bestDist, bPointingAngle_bestDist;
+  float       jPointingAngle_bestAngle2D, bPointingAngle_bestAngle2D;
+  float       jPointingAngle_bestAngle3D, bPointingAngle_bestAngle3D;
+  float       jPointingAngle_priVtxBS, bPointingAngle_priVtxBS;
+
+  float       bBestDist;
 
   float       pi_px, pi_py, pi_pz, pi_charge;
   float       pi_pt, pi_eta, pi_phi;
@@ -197,17 +206,15 @@ private:
   float       J_pt2, J_eta2, J_phi2;
   int         J_charge1, J_charge2;
  
-  double      jFlightLen, jFlightLenErr, jFlightLenSig;
-  double      jFlightLen2D, jFlightLenErr2D, jFlightLenSig2D;
-  double      bFlightLen, bFlightLenErr, bFlightLenSig;
-  double      bFlightLen2D, bFlightLenErr2D, bFlightLenSig2D;
-  double      bFlightTime, bFlightTimeErr;
-  double      bFlightTime3D, bFlightTime3DErr;
-  double      bFlightTimeM, bFlightTimeMErr;
-  double      bFlightTimeBest, bFlightTimeBestErr;
-  double      bFlightTimeBestWBS, bFlightTimeBestWBSErr;
-  double      bFlightTimeTrk, bFlightTimeTrkErr;
-  double      bFlightTimeOld, bFlightTimeOldErr;
+  double      bFlightLen_bestAngle2D_3D, bFlightLen_bestAngle2D_3DErr, bFlightLen_bestAngle2D_3DSig;
+  double      bFlightLen_bestAngle2D_2D, bFlightLen_bestAngle2D_2DErr, bFlightLen_bestAngle2D_2DSig;
+  double      bFlightLen_bestAngle3D_3D, bFlightLen_bestAngle3D_3DErr, bFlightLen_bestAngle3D_3DSig;
+  double      bFlightLen_bestAngle3D_2D, bFlightLen_bestAngle3D_2DErr, bFlightLen_bestAngle3D_2DSig;
+  double      bFlightLen_bestDist_3D, bFlightLen_bestDist_3DErr, bFlightLen_bestDist_3DSig;
+  double      bFlightLen_bestDist_2D, bFlightLen_bestDist_2DErr, bFlightLen_bestDist_2DSig;
+  double      bFlightLen_priVtxBS_3D, bFlightLen_priVtxBS_3DErr, bFlightLen_priVtxBS_3DSig;
+  double      bFlightLen_priVtxBS_2D, bFlightLen_priVtxBS_2DErr, bFlightLen_priVtxBS_2DSig;
+
   double      deltaR_J_pi, cosAngle_J_pi;
 
   float       J_chi2, B_chi2; 
@@ -216,9 +223,10 @@ private:
   int  run, event;
   int  lumiblock;
 
-  TLorentzVector gen_bc_p4,gen_jpsi_p4,gen_pion3_p4,gen_muon1_p4,gen_muon2_p4;
-  TVector3       gen_bc_vtx,gen_jpsi_vtx;
-  float          gen_bc_ct;
+  TLorentzVector gen_bc_p4, gen_jpsi_p4, gen_pion3_p4, gen_muon1_p4, gen_muon2_p4;
+  TVector3       gen_bc_vtx, gen_jpsi_vtx;
+  double         gen_bc_ct2D, gen_bc_ct3D;
+  double         gen_bc_vtx_x, gen_bc_vtx_y, gen_bc_vtx_z;
 
   bool jpsiGenMatched;
   bool candGenMatched;

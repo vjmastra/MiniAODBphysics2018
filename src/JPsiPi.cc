@@ -99,7 +99,6 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
   builderToken_(esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"))),
   triggerCollection_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("TriggerInput"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
-  //genParticles_ ( iConfig.getUntrackedParameter<std::string>("GenParticles",std::string("genParticles")) ),
   genParticles_(consumes<reco::GenParticleCollection>(iConfig.getParameter < edm::InputTag > ("GenParticles"))),
   packedGenToken_(consumes<pat::PackedGenParticleCollection>(iConfig.getParameter <edm::InputTag> ("packedGenParticles"))), 
   OnlyBest_(iConfig.getParameter<bool>("OnlyBest")),
@@ -120,17 +119,16 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
   priVtxX(0), priVtxY(0), priVtxZ(0), priVtxXE(0), priVtxYE(0), priVtxZE(0), priVtxCL(0),
   priVtxXYE(0), priVtxXZE(0), priVtxYZE(0),
 
-  bestVtxX(0), bestVtxY(0), bestVtxZ(0), bestVtxXE(0), bestVtxYE(0), bestVtxZE(0), bestVtxCL(0),
-  bestVtxXYE(0), bestVtxXZE(0), bestVtxYZE(0),
+  bestDistVtxX(0), bestDistVtxY(0), bestDistVtxZ(0), bestDistVtxXE(0), bestDistVtxYE(0), bestDistVtxZE(0), bestDistVtxCL(0),
+  bestDistVtxXYE(0), bestDistVtxXZE(0), bestDistVtxYZE(0),
 
-  bestWBSVtxX(0), bestWBSVtxY(0), bestWBSVtxZ(0), bestWBSVtxXE(0), bestWBSVtxYE(0), bestWBSVtxZE(0), bestWBSVtxCL(0),
-  bestWBSVtxXYE(0), bestWBSVtxXZE(0), bestWBSVtxYZE(0),
+  bestAngle2DVtxX(0), bestAngle2DVtxY(0), bestAngle2DVtxZ(0), bestAngle2DVtxXE(0), bestAngle2DVtxYE(0), bestAngle2DVtxZE(0), bestAngle2DVtxCL(0),
+  bestAngle2DVtxXYE(0), bestAngle2DVtxXZE(0), bestAngle2DVtxYZE(0),
 
-  trkVtxX(0), trkVtxY(0), trkVtxZ(0), trkVtxXE(0), 
-  trkVtxYE(0), trkVtxZE(0), trkVtxCL(0),
-  trkVtxXYE(0), trkVtxXZE(0), trkVtxYZE(0),
+  bestAngle3DVtxX(0), bestAngle3DVtxY(0), bestAngle3DVtxZ(0), bestAngle3DVtxXE(0), bestAngle3DVtxYE(0), bestAngle3DVtxZE(0), bestAngle3DVtxCL(0),
+  bestAngle3DVtxXYE(0), bestAngle3DVtxXZE(0), bestAngle3DVtxYZE(0),
 
-  indexVtx(0), vRefTrk(0),
+  indexBestAngle2DVtx(0), indexBestAngle3DVtx(0), indexBestDistVtx(0), vRefTrk(0),
 
   JDecayVtxX(0), JDecayVtxY(0), JDecayVtxZ(0), 
   JDecayVtxXE(0), JDecayVtxYE(0), JDecayVtxZE(0),
@@ -149,8 +147,12 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
   B_mass(0), B_px(0), B_py(0), B_pz(0),
   B_pt(0), B_eta(0), B_phi(0),
 
-  jPointingAngle(0), bPointingAngle(0),
-  jPointingAngle2D(0), bPointingAngle2D(0),
+  jPointingAngle_bestDist(0), bPointingAngle_bestDist(0),
+  jPointingAngle_bestAngle2D(0), bPointingAngle_bestAngle2D(0),
+  jPointingAngle_bestAngle3D(0), bPointingAngle_bestAngle3D(0),
+  jPointingAngle_priVtxBS(0), bPointingAngle_priVtxBS(0),
+
+  bBestDist(0),
 
   pi_px(0), pi_py(0), pi_pz(0), pi_charge(0),
   pi_pt(0), pi_eta(0), pi_phi(0),
@@ -168,17 +170,15 @@ JPsiPi::JPsiPi(const edm::ParameterSet& iConfig)
 
   J_charge1(0), J_charge2(0),
 
-  jFlightLen(0), jFlightLenErr(0), jFlightLenSig(0),
-  jFlightLen2D(0), jFlightLenErr2D(0), jFlightLenSig2D(0),
-  bFlightLen(0), bFlightLenErr(0), bFlightLenSig(0),
-  bFlightLen2D(0), bFlightLenErr2D(0), bFlightLenSig2D(0),
-  bFlightTime(0), bFlightTimeErr(0),
-  bFlightTime3D(0), bFlightTime3DErr(0),
-  bFlightTimeM(0), bFlightTimeMErr(0),
-  bFlightTimeBest(0), bFlightTimeBestErr(0),
-  bFlightTimeBestWBS(0), bFlightTimeBestWBSErr(0),
-  bFlightTimeTrk(0), bFlightTimeTrkErr(0),
-  bFlightTimeOld(0), bFlightTimeOldErr(0),
+  bFlightLen_bestAngle2D_3D(0), bFlightLen_bestAngle2D_3DErr(0), bFlightLen_bestAngle2D_3DSig(0),
+  bFlightLen_bestAngle2D_2D(0), bFlightLen_bestAngle2D_2DErr(0), bFlightLen_bestAngle2D_2DSig(0),
+  bFlightLen_bestAngle3D_3D(0), bFlightLen_bestAngle3D_3DErr(0), bFlightLen_bestAngle3D_3DSig(0),
+  bFlightLen_bestAngle3D_2D(0), bFlightLen_bestAngle3D_2DErr(0), bFlightLen_bestAngle3D_2DSig(0),
+  bFlightLen_bestDist_3D(0), bFlightLen_bestDist_3DErr(0), bFlightLen_bestDist_3DSig(0),
+  bFlightLen_bestDist_2D(0), bFlightLen_bestDist_2DErr(0), bFlightLen_bestDist_2DSig(0),
+  bFlightLen_priVtxBS_3D(0), bFlightLen_priVtxBS_3DErr(0), bFlightLen_priVtxBS_3DSig(0),
+  bFlightLen_priVtxBS_2D(0), bFlightLen_priVtxBS_2DErr(0), bFlightLen_priVtxBS_2DSig(0),
+
   deltaR_J_pi(0), cosAngle_J_pi(0),
  
   J_chi2(0), B_chi2(0),
@@ -300,8 +300,12 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   gen_muon1_p4.SetPtEtaPhiM(0.,0.,0.,0.);
   gen_muon2_p4.SetPtEtaPhiM(0.,0.,0.,0.);
   gen_bc_vtx.SetXYZ(0.,0.,0.);
+  gen_bc_vtx_x = -10.;
+  gen_bc_vtx_y = -10.;
+  gen_bc_vtx_z = -10.;
   gen_jpsi_vtx.SetXYZ(0.,0.,0.);
-  gen_bc_ct = -9999.;
+  gen_bc_ct2D = -1.;
+  gen_bc_ct3D = -1.;
   jpsiGenMatched = 0;
   candGenMatched = 0;
 
@@ -314,13 +318,17 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	foundit++;
 	gen_bc_p4.SetPtEtaPhiM(dau->pt(),dau->eta(),dau->phi(),dau->mass());
 	gen_bc_vtx.SetXYZ(dau->vx(),dau->vy(),dau->vz());
+	gen_bc_vtx_x = gen_bc_vtx.x();
+	gen_bc_vtx_y = gen_bc_vtx.y();
+	gen_bc_vtx_z = gen_bc_vtx.z();
 	for (size_t k=0; k<dau->numberOfDaughters(); k++) {
 	  const reco::Candidate *gdau = dau->daughter(k);
 	  if (gdau->pdgId()==443 ) { //&& gdau->status()==2) {
 	    foundit++;
 	    gen_jpsi_vtx.SetXYZ(gdau->vx(),gdau->vy(),gdau->vz());
-	    gen_bc_ct = GetLifetime(gen_bc_p4,gen_bc_vtx,gen_jpsi_vtx);
-	    int nm=0;
+	    gen_bc_ct3D = Get_ct_3D(gen_bc_p4,gen_bc_vtx,gen_jpsi_vtx);
+	    gen_bc_ct2D = Get_ct_2D(gen_bc_p4,gen_bc_vtx,gen_jpsi_vtx);
+    	    int nm=0;
 	    for (size_t l=0; l<gdau->numberOfDaughters(); l++) {
 	      const reco::Candidate *mm = gdau->daughter(l);
 	      if (mm->pdgId()==13) { foundit++;
@@ -381,7 +389,11 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       gen_jpsi_p4.SetPtEtaPhiM(0.,0.,0.,0.);
       gen_bc_vtx.SetXYZ(0.,0.,0.);
       gen_jpsi_vtx.SetXYZ(0.,0.,0.);
-      gen_bc_ct = -9999.;
+      gen_bc_ct2D = -1.;
+      gen_bc_ct3D = -1.;
+      gen_bc_vtx_x = -10.;
+      gen_bc_vtx_y = -10.;
+      gen_bc_vtx_z = -10.;
       //std::cout << "Does not found the given decay " << run << "," << event << " foundit=" << foundit << std::endl; // sanity check
     }
   }
@@ -539,123 +551,171 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         if (B_Prob<0.01) continue;
 
         //Select PV that minimized the pointing angle
+//da qui
+        reco::Vertex bestAngle2DPriVtx, bestAngle3DPriVtx, bestDistPriVtx, vtxBS;
 
-        reco::Vertex bestVtxBSIP;
-        reco::Vertex vtxBS;
+        bPointingAngle_bestAngle2D = -10;
+	bPointingAngle_bestAngle3D = -10;
+        bBestDist = 9999;
 
-        jPointingAngle = -10.;
-        bPointingAngle = -10.;
-        jPointingAngle2D = -10.;
-        bPointingAngle2D = -10.;
+	TLorentzVector reco_bc_p4, reco_jpsi_p4;
+	TVector3 reco_bc_decay_vtx, reco_jpsi_decay_vtx;
 
-        Double_t jVtx[3] = {(*J_vFit_vertex_noMC).position().x(), (*J_vFit_vertex_noMC).position().y(), (*J_vFit_vertex_noMC).position().z()};
-        Double_t sVtx[3] = {(*bDecayVertexMC).position().x(), (*bDecayVertexMC).position().y(), (*bDecayVertexMC).position().z()};
-        TVector3 Jmomentum(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z());
-        TVector3 Bmomentum(bCandMC->currentState().globalMomentum().x(), bCandMC->currentState().globalMomentum().y(), bCandMC->currentState().globalMomentum().z());
+        reco_bc_p4.SetXYZM(bCandMC->currentState().globalMomentum().x(), bCandMC->currentState().globalMomentum().y(), bCandMC->currentState().globalMomentum().z(), bCandMC->currentState().mass());
+        TVector3 reco_decay_vtx;
+	reco_jpsi_p4.SetXYZM(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), J_vFit_noMC->currentState().globalMomentum().z(), J_vFit_noMC->currentState().mass());
+        reco_bc_decay_vtx.SetXYZ((*bDecayVertexMC).position().x(), (*bDecayVertexMC).position().y(), (*bDecayVertexMC).position().z());
+	reco_jpsi_decay_vtx.SetXYZ((*J_vFit_vertex_noMC).position().x(), (*J_vFit_vertex_noMC).position().y(), (*J_vFit_vertex_noMC).position().z());
 
-        Double_t jVtxT[3] = {jVtx[0], jVtx[1], 0.};
-        Double_t sVtxT[3] = {sVtx[0], sVtx[1], 0.};
-        TVector3 JmomentumT(J_vFit_noMC->currentState().globalMomentum().x(), J_vFit_noMC->currentState().globalMomentum().y(), 0.);
-        TVector3 BmomentumT(bCandMC->currentState().globalMomentum().x(), bCandMC->currentState().globalMomentum().y(), 0.);
-
-        for (size_t i = 0; i < recVtxs->size(); i++) {
-          vtxBS = (*recVtxs)[i];
-          //pointing Angle computation
-          Double_t primaryVertex[3] = {vtxBS.x(), vtxBS.y(), vtxBS.z()};
-          Double_t jFlightVec[3];
-          Double_t bFlightVec[3];
-          for (int i = 0; i < 3; i++) {
-            jFlightVec[i] = jVtx[i] - primaryVertex[i];
-            bFlightVec[i] = sVtx[i] - primaryVertex[i];
+        for (size_t i = 0; i < recVtxsWithBS->size(); i++) { //recVtxs or recVtxsWithBS?
+          vtxBS = (*recVtxsWithBS)[i];
+	  TVector3 primaryVertexCand;
+          primaryVertexCand.SetXYZ(vtxBS.x(), vtxBS.y(), vtxBS.z());
+	  TVector3 b_pv_dv = reco_bc_decay_vtx - primaryVertexCand;
+	  double distance = flightDistance(b_pv_dv, reco_bc_p4.Vect());
+	  double val_b_3D = b_pv_dv.Dot(reco_bc_p4.Vect())/(b_pv_dv.Mag() * reco_bc_p4.Vect().Mag());
+	  double val_b_2D = pointingAngle(b_pv_dv, reco_bc_p4.Vect());
+	  if (val_b_2D > bPointingAngle_bestAngle2D) {
+            bPointingAngle_bestAngle2D = val_b_2D;
+            indexBestAngle2DVtx = i;
+            bestAngle2DPriVtx = vtxBS;
           }
-          TVector3 jFlightDir(jFlightVec[0], jFlightVec[1], jFlightVec[2]);
-          TVector3 bFlightDir(bFlightVec[0], bFlightVec[1], bFlightVec[2]);
-          TVector3 jFlightDirT(jFlightVec[0], jFlightVec[1], 0.);
-          TVector3 bFlightDirT(bFlightVec[0], bFlightVec[1], 0.);
-          //best PV selection
-          double cosAlphaXYb = TMath::Cos(bFlightDir.Angle(Bmomentum));
-          if (cosAlphaXYb > bPointingAngle) {
-            bPointingAngle = cosAlphaXYb;
-            jPointingAngle = TMath::Cos(jFlightDir.Angle(Jmomentum));
-            bPointingAngle2D = TMath::Cos(bFlightDirT.Angle(BmomentumT));
-            jPointingAngle2D = TMath::Cos(jFlightDirT.Angle(JmomentumT));
-            indexVtx = i;
-            bestVtxBSIP = vtxBS;
+          if (val_b_3D > bPointingAngle_bestAngle3D) {
+            bPointingAngle_bestAngle3D = val_b_3D;
+            indexBestAngle3DVtx = i;
+            bestAngle3DPriVtx = vtxBS;
           }
+	  if (distance < bBestDist) {
+	    bBestDist = distance;
+	    indexBestDistVtx = i;
+	    bestDistPriVtx = vtxBS;
+	  }
         }
-
-        //if (bPointingAngle < 0.9) continue; //Cut from JpsiTk trigger            
 
         vRefTrk = (int)iTrack->vertexRef().key();
 
-        priVtxX = bestVtxBSIP.x();
-        priVtxY = bestVtxBSIP.y();
-        priVtxZ = bestVtxBSIP.z();
-        priVtxXE = bestVtxBSIP.covariance(0, 0);
-        priVtxYE = bestVtxBSIP.covariance(1, 1);
-        priVtxZE = bestVtxBSIP.covariance(2, 2);
-        priVtxXYE = bestVtxBSIP.covariance(0, 1);
-        priVtxXZE = bestVtxBSIP.covariance(0, 2);
-        priVtxYZE = bestVtxBSIP.covariance(1, 2);
-        priVtxCL = (TMath::Prob(bestVtxBSIP.chi2(), (int)bestVtxBSIP.ndof()));
+        priVtxX = highestptVtxWithBS.x();
+        priVtxY = highestptVtxWithBS.y();
+        priVtxZ = highestptVtxWithBS.z();
+        priVtxXE = highestptVtxWithBS.covariance(0, 0);
+        priVtxYE = highestptVtxWithBS.covariance(1, 1);
+        priVtxZE = highestptVtxWithBS.covariance(2, 2);
+        priVtxXYE = highestptVtxWithBS.covariance(0, 1);
+        priVtxXZE = highestptVtxWithBS.covariance(0, 2);
+        priVtxYZE = highestptVtxWithBS.covariance(1, 2);
+        priVtxCL = (TMath::Prob(highestptVtxWithBS.chi2(), (int)highestptVtxWithBS.ndof()));
 
-        bestVtxX = highestptVtx.x(); 
-        bestVtxY = highestptVtx.y();
-        bestVtxZ = highestptVtx.z();
-        bestVtxXE = highestptVtx.covariance(0, 0);
-        bestVtxYE = highestptVtx.covariance(1, 1);
-        bestVtxZE = highestptVtx.covariance(2, 2);
-        bestVtxXYE = highestptVtx.covariance(0, 1);
-        bestVtxXZE = highestptVtx.covariance(0, 2);
-        bestVtxYZE = highestptVtx.covariance(1, 2);
+        bestAngle2DVtxX = bestAngle2DPriVtx.x();
+        bestAngle2DVtxY = bestAngle2DPriVtx.y();
+        bestAngle2DVtxZ = bestAngle2DPriVtx.z();
+        bestAngle2DVtxXE = bestAngle2DPriVtx.covariance(0, 0);
+        bestAngle2DVtxYE = bestAngle2DPriVtx.covariance(1, 1);
+        bestAngle2DVtxZE = bestAngle2DPriVtx.covariance(2, 2);
+        bestAngle2DVtxXYE = bestAngle2DPriVtx.covariance(0, 1);
+        bestAngle2DVtxXZE = bestAngle2DPriVtx.covariance(0, 2);
+        bestAngle2DVtxYZE = bestAngle2DPriVtx.covariance(1, 2);
+        bestAngle2DVtxCL = (TMath::Prob(bestAngle2DPriVtx.chi2(), (int)bestAngle2DPriVtx.ndof()));
 
-        bestWBSVtxX = highestptVtxWithBS.x();
-        bestWBSVtxY = highestptVtxWithBS.y();
-        bestWBSVtxZ = highestptVtxWithBS.z();
-        bestWBSVtxXE = highestptVtxWithBS.covariance(0, 0);
-        bestWBSVtxYE = highestptVtxWithBS.covariance(1, 1);
-        bestWBSVtxZE = highestptVtxWithBS.covariance(2, 2);
-        bestWBSVtxXYE = highestptVtxWithBS.covariance(0, 1);
-        bestWBSVtxXZE = highestptVtxWithBS.covariance(0, 2);
-        bestWBSVtxYZE = highestptVtxWithBS.covariance(1, 2);
+	bestAngle3DVtxX = bestAngle3DPriVtx.x();
+        bestAngle3DVtxY = bestAngle3DPriVtx.y();
+        bestAngle3DVtxZ = bestAngle3DPriVtx.z();
+        bestAngle3DVtxXE = bestAngle3DPriVtx.covariance(0, 0);
+        bestAngle3DVtxYE = bestAngle3DPriVtx.covariance(1, 1);
+        bestAngle3DVtxZE = bestAngle3DPriVtx.covariance(2, 2);
+        bestAngle3DVtxXYE = bestAngle3DPriVtx.covariance(0, 1);
+        bestAngle3DVtxXZE = bestAngle3DPriVtx.covariance(0, 2);
+        bestAngle3DVtxYZE = bestAngle3DPriVtx.covariance(1, 2);
+        bestAngle3DVtxCL = (TMath::Prob(bestAngle3DPriVtx.chi2(), (int)bestAngle3DPriVtx.ndof()));
 
-        reco::Vertex trkVtx = recVtxs->at(vRefTrk); 
+	bestDistVtxX = bestDistPriVtx.x();
+        bestDistVtxY = bestDistPriVtx.y();
+        bestDistVtxZ = bestDistPriVtx.z();
+        bestDistVtxXE = bestDistPriVtx.covariance(0, 0);
+        bestDistVtxYE = bestDistPriVtx.covariance(1, 1);
+        bestDistVtxZE = bestDistPriVtx.covariance(2, 2);
+        bestDistVtxXYE = bestDistPriVtx.covariance(0, 1);
+        bestDistVtxXZE = bestDistPriVtx.covariance(0, 2);
+        bestDistVtxYZE = bestDistPriVtx.covariance(1, 2);
+        bestDistVtxCL = (TMath::Prob(bestDistPriVtx.chi2(), (int)bestDistPriVtx.ndof()));
 
-        trkVtxX = trkVtx.x();
-        trkVtxY = trkVtx.y();
-        trkVtxZ = trkVtx.z();
-        trkVtxXE = trkVtx.covariance(0, 0);
-        trkVtxYE = trkVtx.covariance(1, 1);
-        trkVtxZE = trkVtx.covariance(2, 2);
-        trkVtxXYE = trkVtx.covariance(0, 1);
-        trkVtxXZE = trkVtx.covariance(0, 2);
-        trkVtxYZE = trkVtx.covariance(1, 2);
+        TVector3 reco_priVtxBS_vtx, reco_bestAngle2D_vtx, reco_bestAngle3D_vtx, reco_bestDist_vtx;
+
+	reco_priVtxBS_vtx.SetXYZ(highestptVtxWithBS.position().x(), highestptVtxWithBS.position().y(), highestptVtxWithBS.position().z());
+	reco_bestAngle2D_vtx.SetXYZ(bestAngle2DPriVtx.position().x(), bestAngle2DPriVtx.position().y(), bestAngle2DPriVtx.position().z());
+	reco_bestAngle3D_vtx.SetXYZ(bestAngle3DPriVtx.position().x(), bestAngle3DPriVtx.position().y(), bestAngle3DPriVtx.position().z());
+	reco_bestDist_vtx.SetXYZ(bestDistPriVtx.position().x(), bestDistPriVtx.position().y(), bestDistPriVtx.position().z());
+
+	jPointingAngle_bestAngle2D = pointingAngle(reco_jpsi_decay_vtx - reco_bestAngle2D_vtx, reco_jpsi_p4.Vect());
+	jPointingAngle_bestAngle3D = pointingAngle(reco_jpsi_decay_vtx - reco_bestAngle3D_vtx, reco_jpsi_p4.Vect());
+	jPointingAngle_bestDist  = pointingAngle(reco_jpsi_decay_vtx - reco_bestDist_vtx, reco_jpsi_p4.Vect());
+	jPointingAngle_priVtxBS  = pointingAngle(reco_jpsi_decay_vtx - reco_priVtxBS_vtx, reco_jpsi_p4.Vect());
+
+	bPointingAngle_bestAngle2D = pointingAngle(reco_bc_decay_vtx - reco_bestAngle2D_vtx, reco_bc_p4.Vect());
+	bPointingAngle_bestAngle3D = pointingAngle(reco_bc_decay_vtx - reco_bestAngle3D_vtx, reco_jpsi_p4.Vect());
+        bPointingAngle_bestDist  = pointingAngle(reco_bc_decay_vtx - reco_bestDist_vtx, reco_bc_p4.Vect());
+        bPointingAngle_priVtxBS  = pointingAngle(reco_bc_decay_vtx - reco_priVtxBS_vtx, reco_bc_p4.Vect());
 
         //Compute flight len distance
+	
+	TVector3 reco_prod_vtx;
+	GlobalError v1e, v2e;
+	AlgebraicSymMatrix33 vXYe, pXYe;
 
-            
-        Double_t pVtx[3] = {bestVtxBSIP.x(), bestVtxBSIP.y(), bestVtxBSIP.z()};
-        Double_t pVtxCov[6] = {bestVtxBSIP.covariance(0, 0), bestVtxBSIP.covariance(1, 1), bestVtxBSIP.covariance(2, 2), bestVtxBSIP.covariance(0, 1), bestVtxBSIP.covariance(0, 2), bestVtxBSIP.covariance(1, 2)}; //xx yy zz xy xz yz
-        Double_t jVtxCov[6] = {J_vFit_vertex_noMC->error().cxx(), J_vFit_vertex_noMC->error().cyy(), J_vFit_vertex_noMC->error().czz(), J_vFit_vertex_noMC->error().cyx(), J_vFit_vertex_noMC->error().czx(), J_vFit_vertex_noMC->error().czy()}; //xx yy zz xy xz yz
-        Double_t sVtxCov[6] = {bDecayVertexMC->error().cxx(), bDecayVertexMC->error().cyy(), bDecayVertexMC->error().czz(), bDecayVertexMC->error().cyx(), bDecayVertexMC->error().czx(), bDecayVertexMC->error().czy()}; //xx yy zz xy xz yz
+	v1e = bDecayVertexMC->error();
+	double bperr[6] = {bCandMC->currentState().kinematicParametersError().matrix()(3, 3), 
+		bCandMC->currentState().kinematicParametersError().matrix()(3, 4), bCandMC->currentState().kinematicParametersError().matrix()(3, 4),
+                bCandMC->currentState().kinematicParametersError().matrix()(3, 5), bCandMC->currentState().kinematicParametersError().matrix()(4, 5), bCandMC->currentState().kinematicParametersError().matrix()(5, 5)}; // xx; xy yy; xz yz zz
+        pXYe.SetElements(bperr, bperr+6);
 
-        Double_t pVtxT[3] = {pVtx[0], pVtx[1], 0.};
+	//PV from max pointingAngle
 
-        jFlightLen = Distance(pVtx, jVtx);
-        jFlightLenErr = DistanceError(pVtx, pVtxCov, jVtx, jVtxCov);
-        jFlightLenSig = jFlightLen/jFlightLenErr;
+        v2e = bestAngle2DPriVtx.error();
+        vXYe = v1e.matrix() + v2e.matrix();
 
-        bFlightLen = Distance(pVtx, sVtx);
-        bFlightLenErr = DistanceError(pVtx, pVtxCov, sVtx, sVtxCov);
-        bFlightLenSig = bFlightLen/bFlightLenErr;
+        bFlightLen_bestAngle2D_3D   = Get_ct_3D(reco_bc_p4, reco_bestAngle2D_vtx, reco_bc_decay_vtx);
+	bFlightLen_bestAngle2D_2D   = Get_ct_2D(reco_bc_p4, reco_bestAngle2D_vtx, reco_bc_decay_vtx);
+	bFlightLen_bestAngle2D_3DErr = Get_ct_3Derr(reco_bc_p4, reco_bestAngle2D_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+	bFlightLen_bestAngle2D_2DErr = Get_ct_2Derr(reco_bc_p4, reco_bestAngle2D_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+	(bFlightLen_bestAngle2D_3DErr > 0) ? bFlightLen_bestAngle2D_3DSig = abs(bFlightLen_bestAngle2D_3D/bFlightLen_bestAngle2D_3DErr) : bFlightLen_bestAngle2D_3DSig = 0.;
+	(bFlightLen_bestAngle2D_2DErr > 0) ? bFlightLen_bestAngle2D_2DSig = abs(bFlightLen_bestAngle2D_2D/bFlightLen_bestAngle2D_2DErr) : bFlightLen_bestAngle2D_2DSig = 0.;
 
-        jFlightLen2D = Distance(pVtxT, jVtxT);
-        jFlightLenErr2D = DistanceError(pVtxT, pVtxCov, jVtxT, jVtxCov);
-        jFlightLenSig2D = jFlightLen2D/jFlightLenErr2D;
+	//PV from max 3D-pointingAngle
 
-        bFlightLen2D = Distance(pVtxT, sVtxT);
-        bFlightLenErr2D = DistanceError(pVtxT, pVtxCov, sVtxT, sVtxCov);
-        bFlightLenSig2D = bFlightLen2D/bFlightLenErr2D;
+	v2e = bestAngle3DPriVtx.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        bFlightLen_bestAngle3D_3D   = Get_ct_3D(reco_bc_p4, reco_bestAngle3D_vtx, reco_bc_decay_vtx);
+        bFlightLen_bestAngle3D_2D   = Get_ct_2D(reco_bc_p4, reco_bestAngle3D_vtx, reco_bc_decay_vtx);
+        bFlightLen_bestAngle3D_3DErr = Get_ct_3Derr(reco_bc_p4, reco_bestAngle3D_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+        bFlightLen_bestAngle3D_2DErr = Get_ct_2Derr(reco_bc_p4, reco_bestAngle3D_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+        (bFlightLen_bestAngle3D_3DErr > 0) ? bFlightLen_bestAngle3D_3DSig = abs(bFlightLen_bestAngle3D_3D/bFlightLen_bestAngle3D_3DErr) : bFlightLen_bestAngle3D_3DSig = 0.;
+        (bFlightLen_bestAngle3D_2DErr > 0) ? bFlightLen_bestAngle3D_2DSig = abs(bFlightLen_bestAngle3D_2D/bFlightLen_bestAngle3D_2DErr) : bFlightLen_bestAngle3D_2DSig = 0.;
+
+	//PV from min distance
+
+        v2e = bestDistPriVtx.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        bFlightLen_bestDist_3D   = Get_ct_3D(reco_bc_p4, reco_bestDist_vtx, reco_bc_decay_vtx);
+        bFlightLen_bestDist_2D   = Get_ct_2D(reco_bc_p4, reco_bestDist_vtx, reco_bc_decay_vtx);
+        bFlightLen_bestDist_3DErr = Get_ct_3Derr(reco_bc_p4, reco_bestDist_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+        bFlightLen_bestDist_2DErr = Get_ct_2Derr(reco_bc_p4, reco_bestDist_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+        (bFlightLen_bestDist_3DErr > 0) ? bFlightLen_bestDist_3DSig = abs(bFlightLen_bestDist_3D/bFlightLen_bestDist_3DErr) : bFlightLen_bestDist_3DSig = 0.;
+        (bFlightLen_bestDist_2DErr > 0) ? bFlightLen_bestDist_2DSig = abs(bFlightLen_bestDist_2D/bFlightLen_bestDist_2DErr) : bFlightLen_bestDist_2DSig = 0.;
+
+	//PV from highest-pt-sum pv (with bs constraint)
+
+        v2e = highestptVtxWithBS.error();
+        vXYe = v1e.matrix() + v2e.matrix();
+
+        bFlightLen_priVtxBS_3D   = Get_ct_3D(reco_bc_p4, reco_priVtxBS_vtx, reco_bc_decay_vtx);
+        bFlightLen_priVtxBS_2D   = Get_ct_2D(reco_bc_p4, reco_priVtxBS_vtx, reco_bc_decay_vtx);
+        bFlightLen_priVtxBS_3DErr = Get_ct_3Derr(reco_bc_p4, reco_priVtxBS_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+        bFlightLen_priVtxBS_2DErr = Get_ct_2Derr(reco_bc_p4, reco_priVtxBS_vtx, reco_bc_decay_vtx, vXYe, pXYe);
+        (bFlightLen_priVtxBS_3DErr > 0) ? bFlightLen_priVtxBS_3DSig = abs(bFlightLen_priVtxBS_3D/bFlightLen_priVtxBS_3DErr) : bFlightLen_priVtxBS_3DSig = 0.;
+        (bFlightLen_priVtxBS_2DErr > 0) ? bFlightLen_priVtxBS_2DSig = abs(bFlightLen_priVtxBS_2D/bFlightLen_priVtxBS_2DErr) : bFlightLen_priVtxBS_2DSig = 0.;
+
+	//
 
         pi_pt = iTrack->pt();
         pi_eta = iTrack->eta();
@@ -697,11 +757,6 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           jpsiGenMatched = (dr11 < 0.01 && dr22 < 0.01) || (dr12 < 0.01 && dr21 < 0.01);
           double drpi = gen_pion3_p4.DeltaR(pi4V);
           candGenMatched = jpsiGenMatched && (drpi < 0.01);
-          //dr11 < 0.05 ? trkVtxX = dr11 : trkVtxX = 0;
-          //dr22 < 0.05 ? trkVtxY = dr22 : trkVtxY = 0;
-          //drpi < 0.05 ? trkVtxZ = drpi : trkVtxZ = 0;
-          //dr12 < 0.05 ? trkVtxXE = dr12 : trkVtxXE = 0;
-          //dr21 < 0.05 ? trkVtxYE = dr21 : trkVtxYE = 0;
         }
 
          
@@ -806,10 +861,10 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	BDecayVtxXZE = bDecayVertexMC->error().czx();
 	BDecayVtxYZE = bDecayVertexMC->error().czy();
 		  
-	mu1soft = iMuon1->isSoftMuon(bestVtxBSIP);
-	mu2soft = iMuon2->isSoftMuon(bestVtxBSIP);
-	mu1tight = iMuon1->isTightMuon(bestVtxBSIP);
-	mu2tight = iMuon2->isTightMuon(bestVtxBSIP);
+	mu1soft = iMuon1->isSoftMuon(bestDistPriVtx);
+	mu2soft = iMuon2->isSoftMuon(bestDistPriVtx);
+	mu1tight = iMuon1->isTightMuon(bestDistPriVtx);
+	mu2tight = iMuon2->isTightMuon(bestDistPriVtx);
 	mu1PF = iMuon1->isPFMuon();
 	mu2PF = iMuon2->isPFMuon();
 	mu1loose = muon::isLooseMuon(*iMuon1);
@@ -821,209 +876,11 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	mupC2 = glbTrackP->normalizedChi2();
 	mupNHits = glbTrackP->numberOfValidHits();
 	mupNPHits = glbTrackP->hitPattern().numberOfValidPixelHits();
-        mumdxy = glbTrackM->dxy(bestVtxBSIP.position());
-	mupdxy = glbTrackP->dxy(bestVtxBSIP.position());
-	mumdz = glbTrackM->dz(bestVtxBSIP.position());
-	mupdz = glbTrackP->dz(bestVtxBSIP.position());
+        mumdxy = glbTrackM->dxy(bestDistPriVtx.position());
+	mupdxy = glbTrackP->dxy(bestDistPriVtx.position());
+	mumdz = glbTrackM->dz(bestDistPriVtx.position());
+	mupdz = glbTrackP->dz(bestDistPriVtx.position());
 	
-
-        const double BMASSPDG = 6.27447;
-        const double lightspeed = 2.99792458;
-        const double cm2ps = (100./lightspeed);
-        //Proper time calculation - pointing angle
-
-        TVector3 pvtx(bestVtxBSIP.position().x(),bestVtxBSIP.position().y(),0);
-
-        TVector3 vtx((*bDecayVertexMC).position().x(),(*bDecayVertexMC).position().y(),0);
-        TVector3 pperp(bCandMC->currentState().kinematicParameters().momentum().x(), bCandMC->currentState().kinematicParameters().momentum().y(), 0);
-        AlgebraicVector3 vpperp(pperp.x(),pperp.y(),0);
-        TVector3 vdiff = vtx - pvtx;
-        double cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
-
-	GlobalError v1e = bDecayVertexMC->error();
-        GlobalError v2e = bestVtxBSIP.error();
-        AlgebraicSymMatrix33 vXYe = v1e.matrix() + v2e.matrix();
-
-        float lxy = vdiff.Perp();
-        ROOT::Math::SVector<double, 3> vDiff; // needed by Similarity method
-        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
-        float lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
-
-        bFlightLen2D = lxy;
-        bFlightLenErr2D = lxyErr;
-
-        VertexDistanceXY vdistXY;
-        Measurement1D distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), bestVtxBSIP);
-        bFlightTime = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
-        bFlightTimeErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
-
-        //Flight time baseline with mass from kinematic fit
-
-        bFlightTimeM = cm2ps * distXY.value() * cosAlpha * bCandMC->currentState().mass() / pperp.Perp();
-        bFlightTimeMErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * bCandMC->currentState().mass() / pperp.Perp2();
-
-        //Highest pt
-        
-        pvtx.SetXYZ(highestptVtx.position().x(), highestptVtx.position().y(),0);
-
-        vdiff = vtx - pvtx;
-        cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
-
-        v2e = highestptVtx.error();
-        vXYe = v1e.matrix() + v2e.matrix();
-
-        lxy = vdiff.Perp();
-        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
-        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
-
-        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), highestptVtx);
-        bFlightTimeBest = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
-        bFlightTimeBestErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
-
-        //highest pt with BS constraint
-        
-        pvtx.SetXYZ(highestptVtxWithBS.position().x(), highestptVtxWithBS.position().y(),0);
-
-        vdiff = vtx - pvtx;
-        cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
-
-        v2e = highestptVtxWithBS.error();
-        vXYe = v1e.matrix() + v2e.matrix();
-
-        lxy = vdiff.Perp();
-        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
-        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
-
-        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), highestptVtxWithBS);
-        bFlightTimeBestWBS = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
-        bFlightTimeBestWBSErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
-
-        //pv associated to the track
-       
-        pvtx.SetXYZ(trkVtx.position().x(), trkVtx.position().y(),0);
-
-        vdiff = vtx - pvtx;
-        cosAlpha = vdiff.Dot(pperp) / (vdiff.Perp() * pperp.Perp());
-
-        v2e = trkVtx.error();
-        vXYe = v1e.matrix() + v2e.matrix();
-
-        lxy = vdiff.Perp();
-        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = 0; // needed by Similarity method
-        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Perp();
-
-        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), trkVtx);
-        bFlightTimeTrk = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Perp();
-        bFlightTimeTrkErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Perp2();
-
-        //baseline but 3d
-
-        pvtx.SetXYZ(bestVtxBSIP.position().x(),bestVtxBSIP.position().y(),bestVtxBSIP.position().z());        
-
-        vtx.SetXYZ((*bDecayVertexMC).position().x(),(*bDecayVertexMC).position().y(),(*bDecayVertexMC).position().z());
-        pperp.SetXYZ(bCandMC->currentState().kinematicParameters().momentum().x(), bCandMC->currentState().kinematicParameters().momentum().y(), bCandMC->currentState().kinematicParameters().momentum().z());
-        AlgebraicVector3 vp(pperp.x(),pperp.y(),pperp.z());
-        vdiff = vtx - pvtx;
-        cosAlpha = vdiff.Dot(pperp) / (vdiff.Mag() * pperp.Mag());
-
-        v2e = bestVtxBSIP.error();
-        vXYe = v1e.matrix() + v2e.matrix();
-
-        lxy = vdiff.Mag();
-        vDiff[0] = vdiff.x(); vDiff[1] = vdiff.y(); vDiff[2] = vdiff.z(); // needed by Similarity method
-        lxyErr = sqrt(ROOT::Math::Similarity(vDiff,vXYe)) / vdiff.Mag();
-
-        distXY = vdistXY.distance(reco::Vertex(*bDecayVertexMC), bestVtxBSIP);
-        bFlightTime3D = cm2ps * distXY.value() * cosAlpha * BMASSPDG / pperp.Mag();
-        bFlightTime3DErr = cm2ps * sqrt(ROOT::Math::Similarity(vpperp,vXYe)) * BMASSPDG / pperp.Mag2();
-
-        //old flight length
-
-        double len[2] = {sVtx[0] - pVtx[0], sVtx[1] - pVtx[1]};
-        double factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
-        double elen[3] = {	bestVtxBSIP.covariance(0, 0) + bDecayVertexMC->error().cxx(), 
-				bestVtxBSIP.covariance(1, 1) + bDecayVertexMC->error().cyy(), 
-				factor*(bestVtxBSIP.covariance(0, 1) + bDecayVertexMC->error().cyx())};
-
-        double mom[2] = {B_px, B_py};
-        double emom[3] = {	bCandMC->currentState().kinematicParametersError().matrix()(3, 3), 
-				bCandMC->currentState().kinematicParametersError().matrix()(4, 4), 
-				bCandMC->currentState().kinematicParametersError().matrix()(3, 4)};
-
-        
-        double tDecLen = ProperTime(len, mom);
-        double tDecLenErr = ProperTimeErr(len, elen, mom, emom);
-
-        double a = 0.;
-        double b = 0.;
-        double c = 0.;
-
-        a = bCandMC->currentState().kinematicParametersError().matrix()(6, 6);
-        a /= B_mass;
-
-        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
-
-        double mom2[3] = {mom[0]*mom[0], mom[1]*mom[1], fabs(mom[0]*mom[1])};
-        for (int i = 0; i < 3; i++) c += mom2[i]*emom[i];
-        B_pt > 0 ? c = TMath::Sqrt(c)/B_pt : c = 0.;
-      
-        //B_pt > 0 ? bFlightTime = tDecLen * B_mass / B_pt : bFlightTime = -10.;
-        B_pt > 0 ? bFlightTimeOld = tDecLen * BMASSPDG / B_pt : bFlightTimeOld = -10.;
-        bFlightTimeOld *= cm2ps;
-        //bFlightTimeErr = bFlightTime * TMath::Sqrt( a*a + b*b + c*c);
-        bFlightTimeOldErr = TMath::Abs(bFlightTimeOld) * TMath::Sqrt( b*b + c*c);
-
-        //std::cout << bFlightTime << " " << bFlightTimeErr << " " << bFlightTimeErr/bFlightTime << std::endl;
-/*
-        //Proper time calculation - highest pt vtx
-        
-        len[0] = sVtx[0]-bestVtxX; len[1] = sVtx[1]-bestVtxY;
-        factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
-        elen[0] = highestptVtx.covariance(0, 0) + bDecayVertexMC->error().cxx();
-        elen[1] = highestptVtx.covariance(1, 1) + bDecayVertexMC->error().cyy();
-        elen[2] = factor*(highestptVtx.covariance(0, 1) + bDecayVertexMC->error().cyx());
-
-        tDecLen = ProperTime(len, mom);
-        tDecLenErr = ProperTimeErr(len, elen, mom, emom);
-        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
- 
-        B_pt > 0 ? bFlightTimeBest = tDecLen * BMASSPDG / B_pt : bFlightTimeBest = -10.;
-        bFlightTimeBest *= (100./lightspeed);
-        bFlightTimeBestErr = TMath::Abs(bFlightTimeBest) * TMath::Sqrt(b*b + c*c);
-
-        //Proper time calculation - highest pt vtx wBS
-
-        len[0] = sVtx[0]-bestWBSVtxX; len[1] = sVtx[1]-bestWBSVtxY;
-        factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
-        elen[0] = highestptVtxWithBS.covariance(0, 0) + bDecayVertexMC->error().cxx();
-        elen[1] = highestptVtxWithBS.covariance(1, 1) + bDecayVertexMC->error().cyy();
-        elen[2] = factor*(highestptVtxWithBS.covariance(0, 1) + bDecayVertexMC->error().cyx());
-
-        tDecLen = ProperTime(len, mom);
-        tDecLenErr = ProperTimeErr(len, elen, mom, emom);
-        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
-
-        B_pt > 0 ? bFlightTimeBestWBS = tDecLen * BMASSPDG / B_pt : bFlightTimeBestWBS = -10.;
-        bFlightTimeBestWBS *= (100./lightspeed);
-        bFlightTimeBestWBSErr = TMath::Abs(bFlightTimeBestWBS) * TMath::Sqrt(b*b + c*c);
-
-        //Propert time calculation - from vtx associated to the track
-
-        len[0] = sVtx[0]-trkVtxX;
-        len[1] = sVtx[1]-trkVtxY;
-        factor = (len[0]*len[1])/(len[0]*len[0] + len[1]*len[1]);
-        elen[0] = trkVtx.covariance(0, 0) + bDecayVertexMC->error().cxx();
-        elen[1] = trkVtx.covariance(1, 1) + bDecayVertexMC->error().cyy();
-        elen[2] = factor*(trkVtx.covariance(0, 1) + bDecayVertexMC->error().cyx());
-
-        tDecLen = ProperTime(len, mom);
-        tDecLenErr = ProperTimeErr(len, elen, mom, emom);
-        abs(tDecLen) > 0 ? b = tDecLenErr/tDecLen : b = 0.;
-
-        B_pt > 0 ? bFlightTimeTrk = tDecLen * BMASSPDG / B_pt : bFlightTimeTrk = -10.;
-        bFlightTimeTrk *= (100./lightspeed);
-        bFlightTimeTrkErr = TMath::Abs(bFlightTimeTrk) * TMath::Sqrt(b*b + c*c);
-*/
         //Fill and count
   
         tree_->Fill();    
@@ -1054,34 +911,37 @@ void JPsiPi::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         priVtxXYE = 0.; priVtxXZE = 0.; priVtxYZE = 0.;
         priVtxCL = 0;
 
-        bestVtxX = 0.; bestVtxY = 0.; bestVtxZ = 0.;
-        bestVtxXE = 0.; bestVtxYE = 0.; bestVtxZE = 0.;
-        bestVtxXYE = 0.; bestVtxXZE = 0.; bestVtxYZE = 0.;
+        bestDistVtxX = 0.; bestDistVtxY = 0.; bestDistVtxZ = 0.;
+        bestDistVtxXE = 0.; bestDistVtxYE = 0.; bestDistVtxZE = 0.;
+        bestDistVtxXYE = 0.; bestDistVtxXZE = 0.; bestDistVtxYZE = 0.;
 
-        bestWBSVtxX = 0.; bestWBSVtxY = 0.; bestWBSVtxZ = 0.;
-        bestWBSVtxXE = 0.; bestWBSVtxYE = 0.; bestWBSVtxZE = 0.;
-        bestWBSVtxXYE = 0.; bestWBSVtxXZE = 0.; bestWBSVtxYZE = 0.;
+	bestAngle2DVtxX = 0.; bestAngle2DVtxY = 0.; bestAngle2DVtxZ = 0.;
+        bestAngle2DVtxXE = 0.; bestAngle2DVtxYE = 0.; bestAngle2DVtxZE = 0.;
+        bestAngle2DVtxXYE = 0.; bestAngle2DVtxXZE = 0.; bestAngle2DVtxYZE = 0.;
 
-        trkVtxX = 0.; trkVtxY = 0.; trkVtxZ = 0.;
-        trkVtxXE = 0.; trkVtxYE = 0.; trkVtxZE = 0.;
-        trkVtxXYE = 0.; trkVtxXZE = 0.; trkVtxYZE = 0.;
+	bestAngle3DVtxX = 0.; bestAngle3DVtxY = 0.; bestAngle3DVtxZ = 0.;
+        bestAngle3DVtxXE = 0.; bestAngle3DVtxYE = 0.; bestAngle3DVtxZE = 0.;
+        bestAngle3DVtxXYE = 0.; bestAngle3DVtxXZE = 0.; bestAngle3DVtxYZE = 0.;
 
-        indexVtx = 0; vRefTrk = 0;
+        indexBestAngle2DVtx = 0; indexBestAngle3DVtx = 0; indexBestDistVtx = 0; vRefTrk = 0;
 
-        jFlightLen = 0.; jFlightLenErr = 0.; jFlightLenSig = 0.;
-        jFlightLen2D = 0.; jFlightLenErr2D = 0.; jFlightLenSig2D = 0.;
-        bFlightLen = 0.; bFlightLenErr = 0.; bFlightLenSig = 0.;
-        bFlightLen2D = 0.; bFlightLenErr2D = 0.; bFlightLenSig2D = 0.;
-        jPointingAngle = 0.; bPointingAngle = 0.;
-        jPointingAngle2D = 0.; bPointingAngle2D = 0.;
+        bFlightLen_bestAngle2D_3D = 0.; bFlightLen_bestAngle2D_3DErr = 0.; bFlightLen_bestAngle2D_3DSig = 0.;
+        bFlightLen_bestAngle2D_2D = 0.; bFlightLen_bestAngle2D_2DErr = 0.; bFlightLen_bestAngle2D_2DSig = 0.;
+        bFlightLen_bestAngle3D_3D = 0.; bFlightLen_bestAngle3D_3DErr = 0.; bFlightLen_bestAngle3D_3DSig = 0.;
+        bFlightLen_bestAngle3D_2D = 0.; bFlightLen_bestAngle3D_2DErr = 0.; bFlightLen_bestAngle3D_2DSig = 0.;
+        bFlightLen_bestDist_3D = 0.; bFlightLen_bestDist_3DErr = 0.; bFlightLen_bestDist_3DSig = 0.;
+        bFlightLen_bestDist_2D = 0.; bFlightLen_bestDist_2DErr = 0.; bFlightLen_bestDist_2DSig = 0.;
+        bFlightLen_priVtxBS_3D = 0.; bFlightLen_priVtxBS_3DErr = 0.; bFlightLen_priVtxBS_3DSig = 0.;
+        bFlightLen_priVtxBS_2D = 0.; bFlightLen_priVtxBS_2DErr = 0.; bFlightLen_priVtxBS_2DSig = 0.;
+
+        jPointingAngle_bestDist = 0.; bPointingAngle_bestDist= 0.;
+        jPointingAngle_bestAngle2D = 0.; bPointingAngle_bestAngle2D = 0.;
+	jPointingAngle_bestAngle3D = 0.; bPointingAngle_bestAngle3D = 0.;
+	jPointingAngle_priVtxBS = 0.; bPointingAngle_priVtxBS = 0.;
+
+	bBestDist = 9999;
+
         deltaR_J_pi = 0.; cosAngle_J_pi = 0.;
-
-        bFlightTime = 0.; bFlightTimeErr = 0.;
-        bFlightTime3D = 0.; bFlightTime3DErr = 0.;
-        bFlightTimeM = 0.; bFlightTimeMErr = 0.;
-        bFlightTimeBest = 0.; bFlightTimeBestErr = 0.;
-        bFlightTimeBestWBS = 0.; bFlightTimeBestWBSErr = 0.;
-        bFlightTimeTrk = 0.; bFlightTimeTrkErr = 0.;
 
         JDecayVtxX = 0.; JDecayVtxY = 0.; JDecayVtxZ = 0.;
         JDecayVtxXE = 0.; JDecayVtxYE = 0.; JDecayVtxZE = 0.;
@@ -1257,13 +1117,76 @@ bool JPsiPi::isAncestor(const reco::Candidate* ancestor, const reco::Candidate *
     return false;
 }
 
-double JPsiPi::GetLifetime(TLorentzVector b_p4, TVector3 production_vtx, TVector3 decay_vtx) {
+double JPsiPi::flightDistance(TVector3 distance, TVector3 momentum){
+	double s = distance.Dot(momentum);
+	double p = distance.Mag2();
+	double q = momentum.Mag2();
+	double z = (s*s)/(p*q);
+	double f = ( z < 1.0 ? sqrt(1.0 - z) : 0.0 );
+	return sqrt(p) * f;
+}
+
+double JPsiPi::pointingAngle(TVector3 distance, TVector3 momentum){
+	distance.SetZ(0.);
+	momentum.SetZ(0.);
+	return distance.Dot(momentum)/(distance.Mag() * momentum.Mag());
+}
+
+double JPsiPi::Get_ct_2D(TLorentzVector b_p4, TVector3 production_vtx, TVector3 decay_vtx) {
    TVector3 pv_dv = decay_vtx - production_vtx;
    TVector3 b_p3  = b_p4.Vect();
+
    pv_dv.SetZ(0.);
    b_p3.SetZ(0.);
    Double_t lxy   = pv_dv.Dot(b_p3)/b_p3.Mag();
+
    return lxy*b_p4.M()/b_p3.Mag();
+}
+
+double JPsiPi::Get_ct_2Derr(TLorentzVector b_p4, TVector3 production_vtx, TVector3 decay_vtx, AlgebraicSymMatrix33 lxyErr, AlgebraicSymMatrix33 momErr) {
+   TVector3 pv_dv = decay_vtx - production_vtx;
+   TVector3 b_p3  = b_p4.Vect();
+   double bmass = b_p4.M();
+
+   pv_dv.SetZ(0.);
+   b_p3.SetZ(0.);
+   double lxy = Get_ct_2D(b_p4, production_vtx, decay_vtx);
+
+   ROOT::Math::SVector<double, 3> lxyDer(b_p3.x(), b_p3.y(), b_p3.z());
+   double a0 = bmass/b_p3.Mag2();
+   double a1 = (2 * lxy) / (b_p3.Mag2() * b_p3.Mag2());
+   TVector3 der = a0 * pv_dv - a1 * b_p3;
+   ROOT::Math::SVector<double, 3> momDer(der.x(), der.y(), der.z());
+
+   double c0 = ROOT::Math::Similarity(lxyDer, lxyErr);
+   double c1 = ROOT::Math::Similarity(momDer, momErr);
+
+   return sqrt(c0 + c1);
+}
+
+double JPsiPi::Get_ct_3D(TLorentzVector b_p4, TVector3 production_vtx, TVector3 decay_vtx) {
+   TVector3 pv_dv = decay_vtx - production_vtx;
+   TVector3 b_p3  = b_p4.Vect();
+   Double_t lxyz  = pv_dv.Dot(b_p3)/b_p3.Mag();
+
+   return lxyz*b_p4.M()/b_p3.Mag();
+}
+
+double JPsiPi::Get_ct_3Derr(TLorentzVector b_p4, TVector3 production_vtx, TVector3 decay_vtx, AlgebraicSymMatrix33 lxyzErr, AlgebraicSymMatrix33 momErr) {
+   TVector3 pv_dv = decay_vtx - production_vtx;
+   TVector3 b_p3  = b_p4.Vect();
+   double lxyz = Get_ct_3D(b_p4, production_vtx, decay_vtx);
+
+   ROOT::Math::SVector<double, 3> lxyzDer(b_p3.x(), b_p3.y(), b_p3.z());
+   double a0 = b_p4.M()/b_p3.Mag2();
+   double a1 = (2 * lxyz) / (b_p3.Mag2() * b_p3.Mag2());
+   TVector3 der = a0 * pv_dv - a1 * b_p3;
+   ROOT::Math::SVector<double, 3> momDer(der.x(), der.y(), der.z());
+
+   double c0 = ROOT::Math::Similarity(lxyzDer, lxyzErr);
+   double c1 = ROOT::Math::Similarity(momDer, momErr);
+
+   return sqrt(c0 + c1);
 }
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -1294,10 +1217,17 @@ void JPsiPi::beginJob()
   tree_->Branch("B_eta", &B_eta);
   tree_->Branch("B_phi", &B_phi);
 
-  tree_->Branch("jCosAlpha", &jPointingAngle);
-  tree_->Branch("bCosAlpha", &bPointingAngle);
-  tree_->Branch("jCosAlpha2D", &jPointingAngle2D);
-  tree_->Branch("bCosAlpha2D", &bPointingAngle2D);
+  tree_->Branch("jCosAlpha_bestDist",  &jPointingAngle_bestDist);
+  tree_->Branch("jCosAlpha_bestAngle2D", &jPointingAngle_bestAngle2D);
+  tree_->Branch("jCosAlpha_bestAngle3D", &jPointingAngle_bestAngle3D);
+  tree_->Branch("jCosAlpha_priVtxBS", &jPointingAngle_priVtxBS);
+  tree_->Branch("bCosAlpha_bestDist",  &bPointingAngle_bestDist);
+  tree_->Branch("bCosAlpha_bestAngle2D", &bPointingAngle_bestAngle2D);
+  tree_->Branch("bCosAlpha_bestAngle3D", &bPointingAngle_bestAngle3D);
+  tree_->Branch("bCosAlpha_priVtxBS", &bPointingAngle_priVtxBS);
+
+  tree_->Branch("bMinDistance", &bBestDist);
+
   tree_->Branch("dR_J_pi", &deltaR_J_pi);
   tree_->Branch("cosAngle_J_pi", &cosAngle_J_pi);
  
@@ -1357,37 +1287,42 @@ void JPsiPi::beginJob()
   tree_->Branch("priVtxYZE",&priVtxYZE);
   tree_->Branch("priVtxCL",&priVtxCL);
 
-  tree_->Branch("bestVtxX",&bestVtxX);
-  tree_->Branch("bestVtxY",&bestVtxY);
-  tree_->Branch("bestVtxZ",&bestVtxZ);
-  tree_->Branch("bestVtxXE",&bestVtxXE);
-  tree_->Branch("bestVtxYE",&bestVtxYE);
-  tree_->Branch("bestVtxZE",&bestVtxZE);
-  tree_->Branch("bestVtxXYE",&bestVtxXYE);
-  tree_->Branch("bestVtxXZE",&bestVtxXZE);
-  tree_->Branch("bestVtxYZE",&bestVtxYZE);
+  tree_->Branch("bestAngle2DVtxX",&bestAngle2DVtxX);
+  tree_->Branch("bestAngle2DVtxY",&bestAngle2DVtxY);
+  tree_->Branch("bestAngle2DVtxZ",&bestAngle2DVtxZ);
+  tree_->Branch("bestAngle2DVtxXE",&bestAngle2DVtxXE);
+  tree_->Branch("bestAngle2DVtxYE",&bestAngle2DVtxYE);
+  tree_->Branch("bestAngle2DVtxZE",&bestAngle2DVtxZE);
+  tree_->Branch("bestAngle2DVtxXYE",&bestAngle2DVtxXYE);
+  tree_->Branch("bestAngle2DVtxXZE",&bestAngle2DVtxXZE);
+  tree_->Branch("bestAngle2DVtxYZE",&bestAngle2DVtxYZE);
+  tree_->Branch("bestAngle2DVtxCL", &bestAngle2DVtxCL);
 
-  tree_->Branch("bestWBSVtxX",&bestWBSVtxX);
-  tree_->Branch("bestWBSVtxY",&bestWBSVtxY);
-  tree_->Branch("bestWBSVtxZ",&bestWBSVtxZ);
-  tree_->Branch("bestWBSVtxXE",&bestWBSVtxXE);
-  tree_->Branch("bestWBSVtxYE",&bestWBSVtxYE);
-  tree_->Branch("bestWBSVtxZE",&bestWBSVtxZE);
-  tree_->Branch("bestWBSVtxXYE",&bestWBSVtxXYE);
-  tree_->Branch("bestWBSVtxXZE",&bestWBSVtxXZE);
-  tree_->Branch("bestWBSVtxYZE",&bestWBSVtxYZE);
+  tree_->Branch("bestAngle3DVtxX",&bestAngle3DVtxX);
+  tree_->Branch("bestAngle3DVtxY",&bestAngle3DVtxY);
+  tree_->Branch("bestAngle3DVtxZ",&bestAngle3DVtxZ);
+  tree_->Branch("bestAngle3DVtxXE",&bestAngle3DVtxXE);
+  tree_->Branch("bestAngle3DVtxYE",&bestAngle3DVtxYE);
+  tree_->Branch("bestAngle3DVtxZE",&bestAngle3DVtxZE);
+  tree_->Branch("bestAngle3DVtxXYE",&bestAngle3DVtxXYE);
+  tree_->Branch("bestAngle3DVtxXZE",&bestAngle3DVtxXZE);
+  tree_->Branch("bestAngle3DVtxYZE",&bestAngle3DVtxYZE);
+  tree_->Branch("bestAngle3DVtxCL", &bestAngle3DVtxCL);
 
-  tree_->Branch("trkVtxX",&trkVtxX);
-  tree_->Branch("trkVtxY",&trkVtxY);
-  tree_->Branch("trkVtxZ",&trkVtxZ);
-  tree_->Branch("trkVtxXE",&trkVtxXE);
-  tree_->Branch("trkVtxYE",&trkVtxYE);
-  tree_->Branch("trkVtxZE",&trkVtxZE);
-  tree_->Branch("trkVtxXYE",&trkVtxXYE);
-  tree_->Branch("trkVtxXZE",&trkVtxXZE);
-  tree_->Branch("trkVtxYZE",&trkVtxYZE);
+  tree_->Branch("bestDistVtxX",&bestDistVtxX);
+  tree_->Branch("bestDistVtxY",&bestDistVtxY);
+  tree_->Branch("bestDistVtxZ",&bestDistVtxZ);
+  tree_->Branch("bestDistVtxXE",&bestDistVtxXE);
+  tree_->Branch("bestDistVtxYE",&bestDistVtxYE);
+  tree_->Branch("bestDistVtxZE",&bestDistVtxZE);
+  tree_->Branch("bestDistVtxXYE",&bestDistVtxXYE);
+  tree_->Branch("bestDistVtxXZE",&bestDistVtxXZE);
+  tree_->Branch("bestDistVtxYZE",&bestDistVtxYZE);
+  tree_->Branch("bestDistVtxCL", &bestDistVtxCL);
 
-  tree_->Branch("indexVtx", &indexVtx);
+  tree_->Branch("indexBestAngle2DVtx", &indexBestAngle2DVtx);
+  tree_->Branch("indexBestAngle3DVtx", &indexBestAngle3DVtx);
+  tree_->Branch("indexBestDistVtx", &indexBestDistVtx);
   tree_->Branch("vRefTrk", &vRefTrk);
 
   tree_->Branch("nVtx",       &nVtx);
@@ -1395,33 +1330,33 @@ void JPsiPi::beginJob()
   tree_->Branch("event",        &event,     "event/I");
   tree_->Branch("lumiblock",&lumiblock,"lumiblock/I");
 
-  tree_->Branch("jFlightLen", &jFlightLen);
-  tree_->Branch("jFlightLenErr", &jFlightLenErr);
-  tree_->Branch("jFlightLenSig", &jFlightLenSig);
-  tree_->Branch("bFlightLen", &bFlightLen);
-  tree_->Branch("bFlightLenErr", &bFlightLenErr);
-  tree_->Branch("bFlightLenSig", &bFlightLenSig);
+  tree_->Branch("bFlightLen_bestAngle2D_3D", &bFlightLen_bestAngle2D_3D);
+  tree_->Branch("bFlightLen_bestAngle2D_3DErr", &bFlightLen_bestAngle2D_3DErr);
+  tree_->Branch("bFlightLen_bestAngle2D_3DSig", &bFlightLen_bestAngle2D_3DSig);
+  tree_->Branch("bFlightLen_bestAngle2D_2D", &bFlightLen_bestAngle2D_2D);
+  tree_->Branch("bFlightLen_bestAngle2D_2DErr", &bFlightLen_bestAngle2D_2DErr);
+  tree_->Branch("bFlightLen_bestAngle2D_2DSig", &bFlightLen_bestAngle2D_2DSig);
 
-  tree_->Branch("jFlightLen2D", &jFlightLen2D);
-  tree_->Branch("jFlightLenErr2D", &jFlightLenErr2D);
-  tree_->Branch("jFlightLenSig2D", &jFlightLenSig2D);
-  tree_->Branch("bFlightLen2D", &bFlightLen2D);
-  tree_->Branch("bFlightLenErr2D", &bFlightLenErr2D);
-  tree_->Branch("bFlightLenSig2D", &bFlightLenSig2D);
-  tree_->Branch("bFlightTime", &bFlightTime);
-  tree_->Branch("bFlightTimeErr", &bFlightTimeErr);
-  tree_->Branch("bFlightTime3D", &bFlightTime3D);
-  tree_->Branch("bFlightTime3DErr", &bFlightTime3DErr);
-  tree_->Branch("bFlightTimeM", &bFlightTimeM);
-  tree_->Branch("bFlightTimeMErr", &bFlightTimeMErr);
-  tree_->Branch("bFlightTimeBest", &bFlightTimeBest);
-  tree_->Branch("bFlightTimeBestErr", &bFlightTimeBestErr);
-  tree_->Branch("bFlightTimeBestWBS", &bFlightTimeBestWBS);
-  tree_->Branch("bFlightTimeBestWBSErr", &bFlightTimeBestWBSErr);
-  tree_->Branch("bFlightTimeTrk", &bFlightTimeTrk);
-  tree_->Branch("bFlightTimeTrkErr", &bFlightTimeTrkErr);
-  tree_->Branch("bFlightTimeOld", &bFlightTimeOld);
-  tree_->Branch("bFlightTimeOldErr", &bFlightTimeOldErr);
+  tree_->Branch("bFlightLen_bestAngle3D_3D", &bFlightLen_bestAngle3D_3D);
+  tree_->Branch("bFlightLen_bestAngle3D_3DErr", &bFlightLen_bestAngle3D_3DErr);
+  tree_->Branch("bFlightLen_bestAngle3D_3DSig", &bFlightLen_bestAngle3D_3DSig);
+  tree_->Branch("bFlightLen_bestAngle3D_2D", &bFlightLen_bestAngle3D_2D);
+  tree_->Branch("bFlightLen_bestAngle3D_2DErr", &bFlightLen_bestAngle3D_2DErr);
+  tree_->Branch("bFlightLen_bestAngle3D_2DSig", &bFlightLen_bestAngle3D_2DSig);
+
+  tree_->Branch("bFlightLen_bestDist_3D", &bFlightLen_bestDist_3D);
+  tree_->Branch("bFlightLen_bestDist_3DErr", &bFlightLen_bestDist_3DErr);
+  tree_->Branch("bFlightLen_bestDist_3DSig", &bFlightLen_bestDist_3DSig);
+  tree_->Branch("bFlightLen_bestDist_2D", &bFlightLen_bestDist_2D);
+  tree_->Branch("bFlightLen_bestDist_2DErr", &bFlightLen_bestDist_2DErr);
+  tree_->Branch("bFlightLen_bestDist_2DSig", &bFlightLen_bestDist_2DSig);
+
+  tree_->Branch("bFlightLen_priVtxBS_3D", &bFlightLen_priVtxBS_3D);
+  tree_->Branch("bFlightLen_priVtxBS_3DErr", &bFlightLen_priVtxBS_3DErr);
+  tree_->Branch("bFlightLen_priVtxBS_3DSig", &bFlightLen_priVtxBS_3DSig);
+  tree_->Branch("bFlightLen_priVtxBS_2D", &bFlightLen_priVtxBS_2D);
+  tree_->Branch("bFlightLen_priVtxBS_2DErr", &bFlightLen_priVtxBS_2DErr);
+  tree_->Branch("bFlightLen_priVtxBS_2DSig", &bFlightLen_priVtxBS_2DSig);
 
   tree_->Branch("JDecayVtxX",&JDecayVtxX);
   tree_->Branch("JDecayVtxY",&JDecayVtxY);
@@ -1472,9 +1407,13 @@ void JPsiPi::beginJob()
     tree_->Branch("gen_muon2_p4",  "TLorentzVector",  &gen_muon2_p4);
     tree_->Branch("gen_bc_vtx",    "TVector3",        &gen_bc_vtx);
     tree_->Branch("gen_jpsi_vtx",  "TVector3",        &gen_jpsi_vtx);
-    tree_->Branch("gen_bc_ct",     &gen_bc_ct,        "gen_bc_ct/F");
+    tree_->Branch("gen_bc_ct2D",     &gen_bc_ct2D);
+    tree_->Branch("gen_bc_ct3D",     &gen_bc_ct3D);
     tree_->Branch("jpsiGenMatched", &jpsiGenMatched);
     tree_->Branch("candGenMatched", &candGenMatched);
+    tree_->Branch("gen_bc_vtx_x", &gen_bc_vtx_x);
+    tree_->Branch("gen_bc_vtx_y", &gen_bc_vtx_y);
+    tree_->Branch("gen_bc_vtx_z", &gen_bc_vtx_z);
   }
 }
 

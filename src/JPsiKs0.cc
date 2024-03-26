@@ -16,7 +16,7 @@
 #include "myAnalyzers/JPsiKsPAT/src/JPsiKs0.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
@@ -88,6 +88,7 @@ JPsiKs0::JPsiKs0(const edm::ParameterSet& iConfig)
   trakCollection_label(consumes<edm::View<pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("Trak"))),
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
+  builderToken_(esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
   v0PtrCollection_(consumes<reco::VertexCompositePtrCandidateCollection>(iConfig.getParameter<edm::InputTag>("secundaryVerticesPtr"))),	       
 
@@ -170,9 +171,8 @@ void JPsiKs0::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle<std::vector<reco::VertexCompositePtrCandidate>> theV0PtrHandle;
   iEvent.getByToken(v0PtrCollection_,  theV0PtrHandle);
 
-// Kinematic fit
-  edm::ESHandle<TransientTrackBuilder> theB; 
-  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB); 
+  // Kinematic fit
+  auto const &theB = iSetup.getData(builderToken_);
 
   edm::Handle< View<pat::PackedCandidate> > thePATTrackHandle;
   iEvent.getByToken(trakCollection_label,thePATTrackHandle);
@@ -247,8 +247,8 @@ void JPsiKs0::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if(!(glbTrackP->quality(reco::TrackBase::highPurity))) continue;
 	  
 	  //Let's check the vertex and mass
-	  reco::TransientTrack muon1TT((*theB).build(glbTrackP));
-	  reco::TransientTrack muon2TT((*theB).build(glbTrackM));
+	  reco::TransientTrack muon1TT((theB).build(glbTrackP));
+	  reco::TransientTrack muon2TT((theB).build(glbTrackM));
 
 	  // *****  Trajectory states to calculate DCA for the 2 muons *********************
 	  FreeTrajectoryState mu1State = muon1TT.impactPointTSCP().theState();
@@ -352,8 +352,8 @@ void JPsiKs0::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		     //if ( IsTheSame(*theDaughterTracks[1],*iMuon1) || IsTheSame(*theDaughterTracks[1],*iMuon2) ) continue;
 		     
 		     //Now let's see if these two tracks make a vertex
-		     reco::TransientTrack pion1TT((*theB).build(theDaughterTracks[0]));
-		     reco::TransientTrack pion2TT((*theB).build(theDaughterTracks[1]));		     
+		     reco::TransientTrack pion1TT((theB).build(theDaughterTracks[0]));
+		     reco::TransientTrack pion2TT((theB).build(theDaughterTracks[1]));		     
 		     
 		     ParticleMass pion_mass = 0.13957018;
 		     ParticleMass Ks0_mass = 0.497614;

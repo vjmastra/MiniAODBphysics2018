@@ -17,7 +17,7 @@
 #include "myAnalyzers/JPsiKsPAT/src/miniAODmuons.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -74,6 +74,7 @@ miniAODmuons::miniAODmuons(const edm::ParameterSet& iConfig)
   dimuon_Label(consumes<edm::View<pat::Muon>>(iConfig.getParameter<edm::InputTag>("dimuons"))),
   trakCollection_label(consumes<edm::View<pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("Trak"))),
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
+  builderToken_(esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"))),
    
   isMC_(iConfig.getParameter<bool>("isMC")),
 
@@ -124,8 +125,7 @@ void miniAODmuons::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   //*********************************  
 
   // Kinematic fit
-  edm::ESHandle<TransientTrackBuilder> theB; 
-  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB); 
+  auto const &theB = iSetup.getData(builderToken_);
 
   edm::Handle< View<pat::PackedCandidate> > thePATTrackHandle;
   iEvent.getByToken(trakCollection_label,thePATTrackHandle);
@@ -183,8 +183,8 @@ void miniAODmuons::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	  if(!(glbTrackM->quality(reco::TrackBase::highPurity))) continue;
 	  if(!(glbTrackP->quality(reco::TrackBase::highPurity))) continue;	 
 	  
-	  reco::TransientTrack muon1TT((*theB).build(glbTrackP));
-	  reco::TransientTrack muon2TT((*theB).build(glbTrackM));
+	  reco::TransientTrack muon1TT((theB).build(glbTrackP));
+	  reco::TransientTrack muon2TT((theB).build(glbTrackM));
 
 	 // *****  Trajectory states to calculate DCA for the 2 muons *********************
 	  FreeTrajectoryState mu1State = muon1TT.impactPointTSCP().theState();

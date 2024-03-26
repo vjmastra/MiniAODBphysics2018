@@ -8,7 +8,7 @@
 //#include "myAnalyzers/JPsiKsPAT/interface/JPsif0PAT.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
@@ -75,7 +75,7 @@
 // class decleration
 //
 
-class JPsiPi : public edm::EDAnalyzer {
+class JPsiPi : public edm::one::EDAnalyzer<> {
 public:
   explicit JPsiPi(const edm::ParameterSet&);
   ~JPsiPi();

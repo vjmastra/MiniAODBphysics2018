@@ -17,7 +17,7 @@
 #include "myAnalyzers/JPsiKsPAT/src/Psi2SLambda.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
@@ -90,6 +90,7 @@ Psi2SLambda::Psi2SLambda(const edm::ParameterSet& iConfig)
   trakCollection_label(consumes<edm::View<pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("Trak"))),
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
+  builderToken_(esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
   triggerObjects_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("TriggerInput"))),
   v0PtrCollection_(consumes<reco::VertexCompositePtrCandidateCollection>(iConfig.getParameter<edm::InputTag>("secundaryVerticesPtr"))),	       
@@ -190,8 +191,7 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   edm::Handle<std::vector<reco::VertexCompositePtrCandidate>> theV0PtrHandle;
   iEvent.getByToken(v0PtrCollection_,  theV0PtrHandle);
  
-  edm::ESHandle<TransientTrackBuilder> theB; 
-  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB); 
+  auto const &theB = iSetup.getData(builderToken_);
 
   edm::Handle< View<pat::PackedCandidate> > thePATTrackHandle;
   iEvent.getByToken(trakCollection_label,thePATTrackHandle);
@@ -254,8 +254,8 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if ( !(muonTrackA->quality(reco::TrackBase::highPurity)) ) continue;
       if ( !(muonTrackB->quality(reco::TrackBase::highPurity)) ) continue;     
 
-      reco::TransientTrack muonATT((*theB).build(muonTrackA));
-      reco::TransientTrack muonBTT((*theB).build(muonTrackB));
+      reco::TransientTrack muonATT((theB).build(muonTrackA));
+      reco::TransientTrack muonBTT((theB).build(muonTrackB));
 
       FreeTrajectoryState muAState = muonATT.impactPointTSCP().theState();
       FreeTrajectoryState muBState = muonBTT.impactPointTSCP().theState();
@@ -369,8 +369,8 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if(!(glbTrackP->quality(reco::TrackBase::highPurity))) continue;
 	  
       //Let's check the vertex and mass
-      reco::TransientTrack muon1TT((*theB).build(glbTrackP));
-      reco::TransientTrack muon2TT((*theB).build(glbTrackM));
+      reco::TransientTrack muon1TT((theB).build(glbTrackP));
+      reco::TransientTrack muon2TT((theB).build(glbTrackM));
 
       // *****  Trajectory states to calculate DCA for the 2 muons *********************
       FreeTrajectoryState mu1State = muon1TT.impactPointTSCP().theState();
@@ -460,8 +460,8 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           if (IsTheSame(*iTrack1,*iMuon1) || IsTheSame(*iTrack1,*iMuon2)) continue;
           if (IsTheSame(*iTrack2,*iMuon1) || IsTheSame(*iTrack2,*iMuon2)) continue;
 
-          reco::TransientTrack pion1TT((*theB).build(iTrack1->pseudoTrack()));
-          reco::TransientTrack pion2TT((*theB).build(iTrack2->pseudoTrack())); 
+          reco::TransientTrack pion1TT((theB).build(iTrack1->pseudoTrack()));
+          reco::TransientTrack pion2TT((theB).build(iTrack2->pseudoTrack())); 
 
           ParticleMass pion_mass = 0.13957018;
           float pion_sigma = pion_mass*1.e-6;
@@ -522,8 +522,8 @@ void Psi2SLambda::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      }
 	     
 	      //Now let's see if these two tracks make a vertex
-	      reco::TransientTrack protonTT((*theB).build(theDaughterTracks[0]));
-	      reco::TransientTrack pionTT((*theB).build(theDaughterTracks[1]));		     
+	      reco::TransientTrack protonTT((theB).build(theDaughterTracks[0]));
+	      reco::TransientTrack pionTT((theB).build(theDaughterTracks[1]));		     
 		     
               ParticleMass proton_mass = 0.93827208;
               ParticleMass lambda_particle_mass = 1.115683;

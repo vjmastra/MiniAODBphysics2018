@@ -17,7 +17,7 @@
 #include "myAnalyzers/JPsiKsPAT/src/JPsiPi.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"

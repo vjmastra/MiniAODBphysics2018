@@ -18,7 +18,7 @@
 #include "myAnalyzers/JPsiKsPAT/src/JPsiKaon.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -82,6 +82,7 @@ JPsiKaon::JPsiKaon(const edm::ParameterSet& iConfig)
   primaryVertices_Label(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   triggerResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
   BSLabel_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("bslabel"))),
+  builderToken_(esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"))),
 
   OnlyBest_(iConfig.getParameter<bool>("OnlyBest")),
   isMC_(iConfig.getParameter<bool>("isMC")),
@@ -151,8 +152,7 @@ void JPsiKaon::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //*********************************  
  
   // Kinematic fit
-  edm::ESHandle<TransientTrackBuilder> theB; 
-  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB); 
+  auto const &theB = iSetup.getData(builderToken_);
 
   edm::Handle< View<pat::PackedCandidate> > thePATTrackHandle;
   iEvent.getByToken(trakCollection_label,thePATTrackHandle);
@@ -224,8 +224,8 @@ void JPsiKaon::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if(!(glbTrackM->quality(reco::TrackBase::highPurity))) continue;
 	  if(!(glbTrackP->quality(reco::TrackBase::highPurity))) continue;	 
 	  
-	  reco::TransientTrack muon1TT((*theB).build(glbTrackP));
-	  reco::TransientTrack muon2TT((*theB).build(glbTrackM));
+	  reco::TransientTrack muon1TT((theB).build(glbTrackP));
+	  reco::TransientTrack muon2TT((theB).build(glbTrackM));
 
 	 // *****  Trajectory states to calculate DCA for the 2 muons *********************
 	  FreeTrajectoryState mu1State = muon1TT.impactPointTSCP().theState();
@@ -320,7 +320,7 @@ void JPsiKaon::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		   
 		   if ( IsTheSame(*iTrack1,*iMuon1) || IsTheSame(*iTrack1,*iMuon2) ) continue;
 		    		 		   
-		   reco::TransientTrack kaonTT((*theB).build(iTrack1->pseudoTrack()));
+		   reco::TransientTrack kaonTT((theB).build(iTrack1->pseudoTrack()));
 
 		   ParticleMass kaon_mass = 0.493677;
 		   float kaon_sigma = kaon_mass*1.e-6;

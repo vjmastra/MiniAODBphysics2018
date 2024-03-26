@@ -8,7 +8,7 @@
 //#include "myAnalyzers/JPsiKsPAT/interface/JPsif0PAT.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
@@ -27,6 +27,9 @@
 #include "RecoVertex/KinematicFitPrimitives/interface/TransientTrackKinematicParticle.h"
 #include "RecoVertex/AdaptiveVertexFit/interface/AdaptiveVertexFitter.h"
 #include "RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h"
+
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
 
 #include "TrackingTools/TransientTrack/interface/TransientTrackFromFTSFactory.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
@@ -67,7 +70,7 @@
 // class decleration
 //
 
-class Psi2SLambda : public edm::EDAnalyzer {
+class Psi2SLambda : public edm::one::EDAnalyzer<> {
 public:
   explicit Psi2SLambda(const edm::ParameterSet&);
   ~Psi2SLambda();
@@ -96,6 +99,7 @@ private:
   edm::EDGetTokenT<edm::View<pat::PackedCandidate>> trakCollection_label;
   edm::EDGetTokenT<reco::VertexCollection> primaryVertices_Label;
   edm::EDGetTokenT<reco::BeamSpot> BSLabel_;
+  edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> builderToken_;
   edm::EDGetTokenT<edm::TriggerResults> triggerResults_Label;
   edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerObjects_;
   edm::EDGetTokenT<reco::VertexCompositePtrCandidateCollection> v0PtrCollection_;

@@ -1,0 +1,20 @@
+import FWCore.ParameterSet.Config as cms
+
+rootuple = cms.EDAnalyzer('JPsiPi',
+                          #dimuons = cms.InputTag("selectedPatMuons"),
+                          dimuons = cms.InputTag("slimmedMuons"),
+                          #Trak = cms.InputTag("cleanPatTrackCands"),
+                          Trak = cms.InputTag("packedPFCandidates"),
+                          #Trak_lowpt = cms.InputTag("lostTracks"),
+                          #primaryVertices = cms.InputTag("offlinePrimaryVertices"),
+                          primaryVertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
+                          primaryVerticesWithBS = cms.InputTag("offlineSlimmedPrimaryVerticesWithBS"),
+                          bslabel = cms.InputTag("offlineBeamSpot"),
+                          TriggerInput = cms.InputTag("slimmedPatTrigger"),
+                          TriggerResults = cms.InputTag("TriggerResults", "", "HLT"),
+                          GenParticles = cms.InputTag("prunedGenParticles"),
+                          packedGenParticles = cms.InputTag("packedGenParticles"),
+                          OnlyBest = cms.bool(False),
+                          isMC = cms.bool(True),
+                          OnlyGen = cms.bool(False),
+                          )

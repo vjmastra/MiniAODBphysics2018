@@ -220,8 +220,8 @@ private:
   float       J_chi2, B_chi2; 
   float       B_Prob, J_Prob; 
 
-  int  run, event;
-  int  lumiblock;
+  long int  run, event;
+  long int  lumiblock;
 
   TLorentzVector gen_bc_p4, gen_jpsi_p4, gen_pion3_p4, gen_muon1_p4, gen_muon2_p4;
   TVector3       gen_bc_vtx, gen_jpsi_vtx;
